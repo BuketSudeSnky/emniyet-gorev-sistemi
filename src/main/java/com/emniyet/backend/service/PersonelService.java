@@ -2,11 +2,15 @@ package com.emniyet.backend.service;
 
 import com.emniyet.backend.entity.Birim;
 import com.emniyet.backend.entity.Personel;
+import com.emniyet.backend.enums.Cinsiyet;
+import com.emniyet.backend.exception.ResourceNotFoundException;
 import com.emniyet.backend.repository.BirimRepository;
 import com.emniyet.backend.repository.PersonelRepository;
-import org.springframework.stereotype.Service;
-import com.emniyet.backend.enums.Cinsiyet;
 import com.emniyet.backend.specification.PersonelSpecification;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -31,9 +35,20 @@ public class PersonelService {
     public Personel personelEkle(Personel personel, Long birimId) {
 
         Birim birim = birimRepository.findById(birimId)
-                .orElseThrow(() -> new RuntimeException("Birim bulunamadı"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Birim bulunamadı"
+                        ));
+
+        if (!Boolean.TRUE.equals(birim.getAktif())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Pasif birime personel eklenemez"
+            );
+        }
 
         personel.setBirim(birim);
+        personel.setAktif(true);
 
         return personelRepository.save(personel);
     }
@@ -43,18 +58,31 @@ public class PersonelService {
             Personel yeniPersonel,
             Long birimId) {
 
-        Personel mevcutPersonel = personelRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Personel bulunamadı"));
+        Personel mevcutPersonel =
+                personelRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Personel bulunamadı"
+                                ));
 
         Birim birim = birimRepository.findById(birimId)
-                .orElseThrow(() -> new RuntimeException("Birim bulunamadı"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Birim bulunamadı"
+                        ));
+
+        if (!Boolean.TRUE.equals(birim.getAktif())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Personel pasif birime atanamaz"
+            );
+        }
 
         mevcutPersonel.setAd(yeniPersonel.getAd());
         mevcutPersonel.setSoyad(yeniPersonel.getSoyad());
         mevcutPersonel.setCinsiyet(yeniPersonel.getCinsiyet());
         mevcutPersonel.setTelefon(yeniPersonel.getTelefon());
         mevcutPersonel.setSicilNo(yeniPersonel.getSicilNo());
-        mevcutPersonel.setAktif(yeniPersonel.getAktif());
         mevcutPersonel.setBirim(birim);
 
         return personelRepository.save(mevcutPersonel);
@@ -62,8 +90,12 @@ public class PersonelService {
 
     public Personel personelPasifeAl(Long id) {
 
-        Personel mevcutPersonel = personelRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Personel bulunamadı"));
+        Personel mevcutPersonel =
+                personelRepository.findById(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Personel bulunamadı"
+                                ));
 
         mevcutPersonel.setAktif(false);
 
@@ -84,12 +116,16 @@ public class PersonelService {
                 .findBySoyadContainingIgnoreCaseAndAktifTrue(soyad);
     }
 
-    public List<Personel> cinsiyeteGorePersonelleriGetir(Cinsiyet cinsiyet) {
-        return personelRepository.findByCinsiyetAndAktifTrue(cinsiyet);
+    public List<Personel> cinsiyeteGorePersonelleriGetir(
+            Cinsiyet cinsiyet) {
+
+        return personelRepository
+                .findByCinsiyetAndAktifTrue(cinsiyet);
     }
 
     public List<Personel> sicilNoIlePersonelAra(String sicilNo) {
-        return personelRepository.findBySicilNoAndAktifTrue(sicilNo);
+        return personelRepository
+                .findBySicilNoAndAktifTrue(sicilNo);
     }
 
     public List<Personel> personelFiltrele(
@@ -110,4 +146,12 @@ public class PersonelService {
         );
     }
 
+    public Personel idIlePersonelGetir(Long id) {
+
+        return personelRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Personel bulunamadı"
+                        ));
+    }
 }

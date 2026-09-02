@@ -1,6 +1,7 @@
 package com.emniyet.backend.service;
 
 import com.emniyet.backend.entity.Birim;
+import com.emniyet.backend.exception.ResourceNotFoundException;
 import com.emniyet.backend.repository.BirimRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,10 @@ public class BirimService {
     public Birim birimGuncelle(Long id, Birim yeniBirim) {
 
         Birim mevcutBirim = birimRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Birim bulunamadı"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Birim bulunamadı"
+                        ));
 
         mevcutBirim.setAd(yeniBirim.getAd());
         mevcutBirim.setAktif(yeniBirim.getAktif());
@@ -37,7 +41,10 @@ public class BirimService {
     public Birim birimPasifeAl(Long id) {
 
         Birim mevcutBirim = birimRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Birim bulunamadı"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Birim bulunamadı"
+                        ));
 
         mevcutBirim.setAktif(false);
 
