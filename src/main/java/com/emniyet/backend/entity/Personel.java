@@ -1,7 +1,8 @@
 package com.emniyet.backend.entity;
 
-import jakarta.persistence.*;
 import com.emniyet.backend.enums.Cinsiyet;
+import com.emniyet.backend.enums.KanGrubu;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "personeller")
@@ -21,6 +22,7 @@ public class Personel {
     @Column(nullable = false)
     private Cinsiyet cinsiyet;
 
+    @Column(nullable = false)
     private String telefon;
 
     @Column(unique = true)
@@ -32,6 +34,13 @@ public class Personel {
     @ManyToOne
     @JoinColumn(name = "birim_id", nullable = false)
     private Birim birim;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kan_grubu", nullable = false)
+    private KanGrubu kanGrubu;
+
+    @Column(nullable = false, length = 26)
+    private String iban;
 
     public Long getId() {
         return id;
@@ -95,5 +104,21 @@ public class Personel {
 
     public void setBirim(Birim birim) {
         this.birim = birim;
+    }
+
+    public KanGrubu getKanGrubu() {
+        return kanGrubu;
+    }
+
+    public void setKanGrubu(KanGrubu kanGrubu) {
+        this.kanGrubu = kanGrubu;
+    }
+
+    public String getIban() {
+        return iban;
+    }
+
+    public void setIban(String iban) {
+        this.iban = iban;
     }
 }

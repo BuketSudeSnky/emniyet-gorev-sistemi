@@ -54,11 +54,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String kullaniciAdi =
-                jwtService.kullaniciAdiGetir(token);
+        String sicilNo =
+                jwtService.sicilNoGetir(token);
 
         Kullanici kullanici = kullaniciRepository
-                .findByKullaniciAdi(kullaniciAdi)
+                .findBySicilNo(sicilNo)
                 .orElse(null);
 
         if (kullanici != null &&
@@ -71,7 +71,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            kullanici.getKullaniciAdi(),
+                            kullanici.getSicilNo(),
                             null,
                             List.of(authority)
                     );

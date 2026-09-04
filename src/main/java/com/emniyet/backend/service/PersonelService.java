@@ -32,7 +32,9 @@ public class PersonelService {
         return personelRepository.findByAktifTrue();
     }
 
-    public Personel personelEkle(Personel personel, Long birimId) {
+    public Personel personelEkle(
+            Personel personel,
+            Long birimId) {
 
         Birim birim = birimRepository.findById(birimId)
                 .orElseThrow(() ->
@@ -83,6 +85,16 @@ public class PersonelService {
         mevcutPersonel.setCinsiyet(yeniPersonel.getCinsiyet());
         mevcutPersonel.setTelefon(yeniPersonel.getTelefon());
         mevcutPersonel.setSicilNo(yeniPersonel.getSicilNo());
+
+        // Yeni alanlar
+        mevcutPersonel.setKanGrubu(
+                yeniPersonel.getKanGrubu()
+        );
+
+        mevcutPersonel.setIban(
+                yeniPersonel.getIban()
+        );
+
         mevcutPersonel.setBirim(birim);
 
         return personelRepository.save(mevcutPersonel);
@@ -102,16 +114,23 @@ public class PersonelService {
         return personelRepository.save(mevcutPersonel);
     }
 
-    public List<Personel> birimeGorePersonelleriGetir(Long birimId) {
-        return personelRepository.findByBirimIdAndAktifTrue(birimId);
+    public List<Personel> birimeGorePersonelleriGetir(
+            Long birimId) {
+
+        return personelRepository
+                .findByBirimIdAndAktifTrue(birimId);
     }
 
-    public List<Personel> adaGorePersonelAra(String ad) {
+    public List<Personel> adaGorePersonelAra(
+            String ad) {
+
         return personelRepository
                 .findByAdContainingIgnoreCaseAndAktifTrue(ad);
     }
 
-    public List<Personel> soyadaGorePersonelAra(String soyad) {
+    public List<Personel> soyadaGorePersonelAra(
+            String soyad) {
+
         return personelRepository
                 .findBySoyadContainingIgnoreCaseAndAktifTrue(soyad);
     }
@@ -123,7 +142,9 @@ public class PersonelService {
                 .findByCinsiyetAndAktifTrue(cinsiyet);
     }
 
-    public List<Personel> sicilNoIlePersonelAra(String sicilNo) {
+    public List<Personel> sicilNoIlePersonelAra(
+            String sicilNo) {
+
         return personelRepository
                 .findBySicilNoAndAktifTrue(sicilNo);
     }
@@ -146,7 +167,8 @@ public class PersonelService {
         );
     }
 
-    public Personel idIlePersonelGetir(Long id) {
+    public Personel idIlePersonelGetir(
+            Long id) {
 
         return personelRepository.findById(id)
                 .orElseThrow(() ->

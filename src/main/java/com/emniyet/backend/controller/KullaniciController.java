@@ -4,6 +4,7 @@ import com.emniyet.backend.dto.KullaniciOlusturRequest;
 import com.emniyet.backend.dto.KullaniciResponse;
 import com.emniyet.backend.entity.Kullanici;
 import com.emniyet.backend.service.KullaniciService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,11 +19,11 @@ public class KullaniciController {
 
     @PostMapping
     public KullaniciResponse kullaniciOlustur(
-            @RequestBody KullaniciOlusturRequest request) {
+            @Valid @RequestBody KullaniciOlusturRequest request) {
 
         Kullanici kullanici = new Kullanici();
 
-        kullanici.setKullaniciAdi(request.getKullaniciAdi());
+        kullanici.setSicilNo(request.getSicilNo());
         kullanici.setSifre(request.getSifre());
         kullanici.setRol(request.getRol());
         kullanici.setAktif(true);
@@ -42,7 +43,7 @@ public class KullaniciController {
 
         return new KullaniciResponse(
                 kaydedilen.getId(),
-                kaydedilen.getKullaniciAdi(),
+                kaydedilen.getSicilNo(),
                 kaydedilen.getRol(),
                 kaydedilen.getAktif(),
                 birimId,

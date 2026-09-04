@@ -34,12 +34,12 @@ public class KullaniciService {
             Long birimId) {
 
         if (kullaniciRepository
-                .findByKullaniciAdi(kullanici.getKullaniciAdi())
+                .findBySicilNo(kullanici.getSicilNo())
                 .isPresent()) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Bu kullanıcı adı zaten kullanılıyor"
+                    "Bu sicil numarası zaten kullanılıyor"
             );
         }
 
@@ -91,15 +91,15 @@ public class KullaniciService {
     }
 
     public Kullanici girisYap(
-            String kullaniciAdi,
+            String sicilNo,
             String sifre) {
 
         Kullanici kullanici = kullaniciRepository
-                .findByKullaniciAdi(kullaniciAdi)
+                .findBySicilNo(sicilNo)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.UNAUTHORIZED,
-                                "Kullanıcı adı veya şifre hatalı"
+                                "Sicil numarası veya şifre hatalı"
                         ));
 
         if (!Boolean.TRUE.equals(kullanici.getAktif())) {
@@ -115,7 +115,7 @@ public class KullaniciService {
 
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
-                    "Kullanıcı adı veya şifre hatalı"
+                    "Sicil numarası veya şifre hatalı"
             );
         }
 
@@ -123,10 +123,10 @@ public class KullaniciService {
     }
 
     public Kullanici aktifKullaniciyiGetir(
-            String kullaniciAdi) {
+            String sicilNo) {
 
         Kullanici kullanici = kullaniciRepository
-                .findByKullaniciAdi(kullaniciAdi)
+                .findBySicilNo(sicilNo)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.UNAUTHORIZED,

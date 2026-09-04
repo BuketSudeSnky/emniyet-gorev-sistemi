@@ -26,7 +26,7 @@ public class AuthController {
     public LoginResponse login(@RequestBody LoginRequest request) {
 
         Kullanici kullanici = kullaniciService.girisYap(
-                request.getKullaniciAdi(),
+                request.getSicilNo(),
                 request.getSifre()
         );
 
@@ -42,7 +42,7 @@ public class AuthController {
 
         return new LoginResponse(
                 kullanici.getId(),
-                kullanici.getKullaniciAdi(),
+                kullanici.getSicilNo(),
                 kullanici.getRol(),
                 birimId,
                 birimAdi,

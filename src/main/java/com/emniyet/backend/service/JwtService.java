@@ -24,7 +24,7 @@ public class JwtService {
         long simdi = System.currentTimeMillis();
 
         return Jwts.builder()
-                .subject(kullanici.getKullaniciAdi())
+                .subject(kullanici.getSicilNo())
                 .claim("rol", kullanici.getRol().name())
                 .claim(
                         "birimId",
@@ -38,7 +38,7 @@ public class JwtService {
                 .compact();
     }
 
-    public String kullaniciAdiGetir(String token) {
+    public String sicilNoGetir(String token) {
 
         return Jwts.parser()
                 .verifyWith(key)

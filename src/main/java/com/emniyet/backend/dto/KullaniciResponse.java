@@ -5,7 +5,7 @@ import com.emniyet.backend.enums.Rol;
 public class KullaniciResponse {
 
     private Long id;
-    private String kullaniciAdi;
+    private String sicilNo;
     private Rol rol;
     private Boolean aktif;
     private Long birimId;
@@ -13,14 +13,14 @@ public class KullaniciResponse {
 
     public KullaniciResponse(
             Long id,
-            String kullaniciAdi,
+            String sicilNo,
             Rol rol,
             Boolean aktif,
             Long birimId,
             String birimAdi) {
 
         this.id = id;
-        this.kullaniciAdi = kullaniciAdi;
+        this.sicilNo = sicilNo;
         this.rol = rol;
         this.aktif = aktif;
         this.birimId = birimId;
@@ -31,8 +31,8 @@ public class KullaniciResponse {
         return id;
     }
 
-    public String getKullaniciAdi() {
-        return kullaniciAdi;
+    public String getSicilNo() {
+        return sicilNo;
     }
 
     public Rol getRol() {

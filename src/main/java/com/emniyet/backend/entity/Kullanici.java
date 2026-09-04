@@ -12,7 +12,7 @@ public class Kullanici {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String kullaniciAdi;
+    private String sicilNo;
 
     @Column(nullable = false)
     private String sifre;
@@ -36,12 +36,12 @@ public class Kullanici {
         this.id = id;
     }
 
-    public String getKullaniciAdi() {
-        return kullaniciAdi;
+    public String getSicilNo() {
+        return sicilNo;
     }
 
-    public void setKullaniciAdi(String kullaniciAdi) {
-        this.kullaniciAdi = kullaniciAdi;
+    public void setSicilNo(String sicilNo) {
+        this.sicilNo = sicilNo;
     }
 
     public String getSifre() {

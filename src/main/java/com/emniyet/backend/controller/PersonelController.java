@@ -1,15 +1,18 @@
 package com.emniyet.backend.controller;
 
+import com.emniyet.backend.dto.PersonelRequest;
 import com.emniyet.backend.entity.Kullanici;
 import com.emniyet.backend.entity.Personel;
 import com.emniyet.backend.enums.Cinsiyet;
 import com.emniyet.backend.enums.Rol;
 import com.emniyet.backend.service.KullaniciService;
 import com.emniyet.backend.service.PersonelService;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -50,23 +53,37 @@ public class PersonelController {
 
     @PostMapping
     public Personel personelEkle(
-            @RequestBody Personel personel,
+            @Valid @RequestBody PersonelRequest request,
             @RequestParam Long birimId,
             Authentication authentication) {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        birimYetkisiniKontrolEt(kullanici, birimId);
+        birimYetkisiniKontrolEt(
+                kullanici,
+                birimId
+        );
+
+        Personel personel = new Personel();
+
+        personel.setAd(request.getAd());
+        personel.setSoyad(request.getSoyad());
+        personel.setCinsiyet(request.getCinsiyet());
+        personel.setSicilNo(request.getSicilNo());
+        personel.setTelefon(request.getTelefon());
+        personel.setKanGrubu(request.getKanGrubu());
+        personel.setIban(request.getIban());
 
         return personelService.personelEkle(
                 personel,
                 birimId
         );
     }
+
     @PutMapping("/{id}")
     public Personel personelGuncelle(
             @PathVariable Long id,
-            @RequestBody Personel personel,
+            @Valid @RequestBody PersonelRequest request,
             @RequestParam Long birimId,
             Authentication authentication) {
 
@@ -84,6 +101,16 @@ public class PersonelController {
                 kullanici,
                 birimId
         );
+
+        Personel personel = new Personel();
+
+        personel.setAd(request.getAd());
+        personel.setSoyad(request.getSoyad());
+        personel.setCinsiyet(request.getCinsiyet());
+        personel.setSicilNo(request.getSicilNo());
+        personel.setTelefon(request.getTelefon());
+        personel.setKanGrubu(request.getKanGrubu());
+        personel.setIban(request.getIban());
 
         return personelService.personelGuncelle(
                 id,
@@ -117,12 +144,14 @@ public class PersonelController {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        birimYetkisiniKontrolEt(kullanici, birimId);
+        birimYetkisiniKontrolEt(
+                kullanici,
+                birimId
+        );
 
         return personelService
                 .birimeGorePersonelleriGetir(birimId);
     }
-
 
     @GetMapping("/filtrele")
     public List<Personel> personelFiltrele(
@@ -138,11 +167,8 @@ public class PersonelController {
         Long kullanilacakBirimId;
 
         if (kullanici.getRol() == Rol.ADMIN) {
-
             kullanilacakBirimId = birimId;
-
         } else {
-
             kullanilacakBirimId =
                     kullanici.getBirim().getId();
         }
@@ -156,7 +182,9 @@ public class PersonelController {
         );
     }
 
-    private Kullanici aktifKullanici(Authentication authentication) {
+    private Kullanici aktifKullanici(
+            Authentication authentication) {
+
         return kullaniciService.aktifKullaniciyiGetir(
                 authentication.getName()
         );
@@ -171,7 +199,9 @@ public class PersonelController {
         }
 
         if (kullanici.getBirim() == null ||
-                !kullanici.getBirim().getId().equals(birimId)) {
+                !kullanici.getBirim()
+                        .getId()
+                        .equals(birimId)) {
 
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,

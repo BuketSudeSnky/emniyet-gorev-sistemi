@@ -2,15 +2,15 @@ package com.emniyet.backend.dto;
 
 public class LoginRequest {
 
-    private String kullaniciAdi;
+    private String sicilNo;
     private String sifre;
 
-    public String getKullaniciAdi() {
-        return kullaniciAdi;
+    public String getSicilNo() {
+        return sicilNo;
     }
 
-    public void setKullaniciAdi(String kullaniciAdi) {
-        this.kullaniciAdi = kullaniciAdi;
+    public void setSicilNo(String sicilNo) {
+        this.sicilNo = sicilNo;
     }
 
     public String getSifre() {

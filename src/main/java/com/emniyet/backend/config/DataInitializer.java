@@ -19,12 +19,12 @@ public class DataInitializer {
         return args -> {
 
             if (kullaniciRepository
-                    .findByKullaniciAdi("admin")
+                    .findBySicilNo("ADMIN001")
                     .isEmpty()) {
 
                 Kullanici admin = new Kullanici();
 
-                admin.setKullaniciAdi("admin");
+                admin.setSicilNo("ADMIN001");
                 admin.setSifre(
                         passwordEncoder.encode("Admin123!")
                 );

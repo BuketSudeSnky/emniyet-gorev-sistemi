@@ -39,7 +39,6 @@ public class GorevPersonelController {
         this.kullaniciService = kullaniciService;
     }
 
-    // Göreve personel ata
     @PostMapping("/ata/{gorevId}")
     public List<GorevPersonel> personelleriGoreveAta(
             @PathVariable Long gorevId,
@@ -48,21 +47,21 @@ public class GorevPersonelController {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        Gorev gorev = gorevService.idIleGorevGetir(gorevId);
+        Gorev gorev =
+                gorevService.idIleGorevGetir(gorevId);
 
-        // Birim yetkilisi sadece kendi biriminin görevine atama yapabilir
         birimYetkisiniKontrolEt(
                 kullanici,
                 gorev.getBirim().getId()
         );
 
-        return gorevPersonelService.personelleriGoreveAta(
-                gorevId,
-                personelIdleri
-        );
+        return gorevPersonelService
+                .personelleriGoreveAta(
+                        gorevId,
+                        personelIdleri
+                );
     }
 
-    // Bir göreve atanmış personeller
     @GetMapping("/gorev/{gorevId}")
     public List<GorevPersonel> goreveAtananPersonelleriGetir(
             @PathVariable Long gorevId,
@@ -70,7 +69,8 @@ public class GorevPersonelController {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        Gorev gorev = gorevService.idIleGorevGetir(gorevId);
+        Gorev gorev =
+                gorevService.idIleGorevGetir(gorevId);
 
         birimYetkisiniKontrolEt(
                 kullanici,
@@ -81,7 +81,6 @@ public class GorevPersonelController {
                 .goreveAtananPersonelleriGetir(gorevId);
     }
 
-    // Personelin görev geçmişi
     @GetMapping("/personel/{personelId}")
     public List<GorevPersonel> personelinGorevGecmisiniGetir(
             @PathVariable Long personelId,
@@ -101,7 +100,6 @@ public class GorevPersonelController {
                 .personelinGorevGecmisiniGetir(personelId);
     }
 
-    // Görev dağıtım sırası
     @GetMapping("/dagitim-sirasi")
     public List<PersonelGorevSirasiDTO> gorevDagitimSirasiGetir(
             @RequestParam(required = false) Long birimId,
@@ -125,7 +123,6 @@ public class GorevPersonelController {
 
         } else {
 
-            // URL'den gelen birimId'ye güvenmiyoruz.
             kullanilacakBirimId =
                     kullanici.getBirim().getId();
         }

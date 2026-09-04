@@ -1,10 +1,13 @@
 package com.emniyet.backend.controller;
 
+import com.emniyet.backend.dto.GorevRequest;
 import com.emniyet.backend.entity.Gorev;
 import com.emniyet.backend.entity.Kullanici;
 import com.emniyet.backend.enums.Rol;
 import com.emniyet.backend.service.GorevService;
 import com.emniyet.backend.service.KullaniciService;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -47,14 +50,30 @@ public class GorevController {
 
     @PostMapping
     public Gorev gorevEkle(
-            @RequestBody Gorev gorev,
+            @Valid @RequestBody GorevRequest request,
             @RequestParam Long birimId,
             @RequestParam Long gorevTuruId,
             Authentication authentication) {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        birimYetkisiniKontrolEt(kullanici, birimId);
+        birimYetkisiniKontrolEt(
+                kullanici,
+                birimId
+        );
+
+        Gorev gorev = new Gorev();
+
+        gorev.setTarih(request.getTarih());
+        gorev.setBaslangicSaati(
+                request.getBaslangicSaati()
+        );
+        gorev.setBitisSaati(
+                request.getBitisSaati()
+        );
+        gorev.setAciklama(
+                request.getAciklama()
+        );
 
         return gorevService.gorevEkle(
                 gorev,
@@ -66,7 +85,7 @@ public class GorevController {
     @PutMapping("/{id}")
     public Gorev gorevGuncelle(
             @PathVariable Long id,
-            @RequestBody Gorev gorev,
+            @Valid @RequestBody GorevRequest request,
             @RequestParam Long birimId,
             @RequestParam Long gorevTuruId,
             Authentication authentication) {
@@ -84,6 +103,19 @@ public class GorevController {
         birimYetkisiniKontrolEt(
                 kullanici,
                 birimId
+        );
+
+        Gorev gorev = new Gorev();
+
+        gorev.setTarih(request.getTarih());
+        gorev.setBaslangicSaati(
+                request.getBaslangicSaati()
+        );
+        gorev.setBitisSaati(
+                request.getBitisSaati()
+        );
+        gorev.setAciklama(
+                request.getAciklama()
         );
 
         return gorevService.gorevGuncelle(
@@ -119,7 +151,10 @@ public class GorevController {
 
         Kullanici kullanici = aktifKullanici(authentication);
 
-        birimYetkisiniKontrolEt(kullanici, birimId);
+        birimYetkisiniKontrolEt(
+                kullanici,
+                birimId
+        );
 
         return gorevService
                 .birimeGoreGorevleriGetir(birimId);
