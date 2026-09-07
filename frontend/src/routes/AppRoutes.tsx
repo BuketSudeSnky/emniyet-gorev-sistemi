@@ -9,6 +9,7 @@ import DashboardPage from "../pages/DashboardPage";
 import PlaceholderPage from "../pages/PlaceholderPage";
 import PersonelPage from "../pages/PersonelPage";
 import BirimlerPage from "../pages/admin/BirimlerPage";
+import GorevTurleriPage from "../pages/admin/GorevTurleriPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -70,15 +71,9 @@ const AppRoutes = () => {
             />
 
             <Route
-              path="/gorev-turleri"
-              element={
-                <PlaceholderPage
-                  title="Görev Türleri"
-                  description="Görev türlerinin tanımlanması ve yönetimi."
-                />
-              }
-            />
-
+  path="/gorev-turleri"
+  element={<GorevTurleriPage />}
+/>
             <Route
               path="/kullanicilar"
               element={
