@@ -2,6 +2,8 @@ package com.emniyet.backend.specification;
 
 import com.emniyet.backend.entity.Personel;
 import com.emniyet.backend.enums.Cinsiyet;
+import com.emniyet.backend.enums.KanGrubu;
+
 import org.springframework.data.jpa.domain.Specification;
 
 public class PersonelSpecification {
@@ -10,18 +12,17 @@ public class PersonelSpecification {
             String ad,
             String soyad,
             String sicilNo,
+            String telefon,
             Cinsiyet cinsiyet,
-            Long birimId) {
+            KanGrubu kanGrubu,
+            Long birimId,
+            Boolean aktif) {
 
         return (root, query, criteriaBuilder) -> {
 
             var predicate = criteriaBuilder.conjunction();
 
-            predicate = criteriaBuilder.and(
-                    predicate,
-                    criteriaBuilder.isTrue(root.get("aktif"))
-            );
-
+            // Ad
             if (ad != null && !ad.isBlank()) {
                 predicate = criteriaBuilder.and(
                         predicate,
@@ -32,6 +33,7 @@ public class PersonelSpecification {
                 );
             }
 
+            // Soyad
             if (soyad != null && !soyad.isBlank()) {
                 predicate = criteriaBuilder.and(
                         predicate,
@@ -42,24 +44,69 @@ public class PersonelSpecification {
                 );
             }
 
+            // Sicil No
             if (sicilNo != null && !sicilNo.isBlank()) {
                 predicate = criteriaBuilder.and(
                         predicate,
-                        criteriaBuilder.equal(root.get("sicilNo"), sicilNo)
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("sicilNo")),
+                                "%" + sicilNo.toLowerCase() + "%"
+                        )
                 );
             }
 
+            // Telefon
+            if (telefon != null && !telefon.isBlank()) {
+                predicate = criteriaBuilder.and(
+                        predicate,
+                        criteriaBuilder.like(
+                                root.get("telefon"),
+                                "%" + telefon + "%"
+                        )
+                );
+            }
+
+            // Cinsiyet
             if (cinsiyet != null) {
                 predicate = criteriaBuilder.and(
                         predicate,
-                        criteriaBuilder.equal(root.get("cinsiyet"), cinsiyet)
+                        criteriaBuilder.equal(
+                                root.get("cinsiyet"),
+                                cinsiyet
+                        )
                 );
             }
 
+            // Kan Grubu
+            if (kanGrubu != null) {
+                predicate = criteriaBuilder.and(
+                        predicate,
+                        criteriaBuilder.equal(
+                                root.get("kanGrubu"),
+                                kanGrubu
+                        )
+                );
+            }
+
+            // Birim
             if (birimId != null) {
                 predicate = criteriaBuilder.and(
                         predicate,
-                        criteriaBuilder.equal(root.get("birim").get("id"), birimId)
+                        criteriaBuilder.equal(
+                                root.get("birim").get("id"),
+                                birimId
+                        )
+                );
+            }
+
+            // Aktif / Pasif
+            if (aktif != null) {
+                predicate = criteriaBuilder.and(
+                        predicate,
+                        criteriaBuilder.equal(
+                                root.get("aktif"),
+                                aktif
+                        )
                 );
             }
 

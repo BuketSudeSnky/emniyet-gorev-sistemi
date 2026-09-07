@@ -3,6 +3,7 @@ package com.emniyet.backend.service;
 import com.emniyet.backend.entity.Birim;
 import com.emniyet.backend.entity.Personel;
 import com.emniyet.backend.enums.Cinsiyet;
+import com.emniyet.backend.enums.KanGrubu;
 import com.emniyet.backend.exception.ResourceNotFoundException;
 import com.emniyet.backend.repository.BirimRepository;
 import com.emniyet.backend.repository.PersonelRepository;
@@ -28,10 +29,12 @@ public class PersonelService {
         this.birimRepository = birimRepository;
     }
 
+    // Aktif personelleri getir
     public List<Personel> tumPersonelleriGetir() {
         return personelRepository.findByAktifTrue();
     }
 
+    // Personel ekle
     public Personel personelEkle(
             Personel personel,
             Long birimId) {
@@ -55,6 +58,7 @@ public class PersonelService {
         return personelRepository.save(personel);
     }
 
+    // Personel güncelle
     public Personel personelGuncelle(
             Long id,
             Personel yeniPersonel,
@@ -85,21 +89,14 @@ public class PersonelService {
         mevcutPersonel.setCinsiyet(yeniPersonel.getCinsiyet());
         mevcutPersonel.setTelefon(yeniPersonel.getTelefon());
         mevcutPersonel.setSicilNo(yeniPersonel.getSicilNo());
-
-        // Yeni alanlar
-        mevcutPersonel.setKanGrubu(
-                yeniPersonel.getKanGrubu()
-        );
-
-        mevcutPersonel.setIban(
-                yeniPersonel.getIban()
-        );
-
+        mevcutPersonel.setKanGrubu(yeniPersonel.getKanGrubu());
+        mevcutPersonel.setIban(yeniPersonel.getIban());
         mevcutPersonel.setBirim(birim);
 
         return personelRepository.save(mevcutPersonel);
     }
 
+    // Personeli pasife al
     public Personel personelPasifeAl(Long id) {
 
         Personel mevcutPersonel =
@@ -114,6 +111,7 @@ public class PersonelService {
         return personelRepository.save(mevcutPersonel);
     }
 
+    // Birime göre aktif personelleri getir
     public List<Personel> birimeGorePersonelleriGetir(
             Long birimId) {
 
@@ -121,6 +119,7 @@ public class PersonelService {
                 .findByBirimIdAndAktifTrue(birimId);
     }
 
+    // Ada göre aktif personel ara
     public List<Personel> adaGorePersonelAra(
             String ad) {
 
@@ -128,6 +127,7 @@ public class PersonelService {
                 .findByAdContainingIgnoreCaseAndAktifTrue(ad);
     }
 
+    // Soyada göre aktif personel ara
     public List<Personel> soyadaGorePersonelAra(
             String soyad) {
 
@@ -135,6 +135,7 @@ public class PersonelService {
                 .findBySoyadContainingIgnoreCaseAndAktifTrue(soyad);
     }
 
+    // Cinsiyete göre aktif personelleri getir
     public List<Personel> cinsiyeteGorePersonelleriGetir(
             Cinsiyet cinsiyet) {
 
@@ -142,6 +143,7 @@ public class PersonelService {
                 .findByCinsiyetAndAktifTrue(cinsiyet);
     }
 
+    // Sicil numarasına göre aktif personel ara
     public List<Personel> sicilNoIlePersonelAra(
             String sicilNo) {
 
@@ -149,24 +151,32 @@ public class PersonelService {
                 .findBySicilNoAndAktifTrue(sicilNo);
     }
 
+    // Gelişmiş personel filtreleme
     public List<Personel> personelFiltrele(
             String ad,
             String soyad,
             String sicilNo,
+            String telefon,
             Cinsiyet cinsiyet,
-            Long birimId) {
+            KanGrubu kanGrubu,
+            Long birimId,
+            Boolean aktif) {
 
         return personelRepository.findAll(
                 PersonelSpecification.filtrele(
                         ad,
                         soyad,
                         sicilNo,
+                        telefon,
                         cinsiyet,
-                        birimId
+                        kanGrubu,
+                        birimId,
+                        aktif
                 )
         );
     }
 
+    // ID ile personel getir
     public Personel idIlePersonelGetir(
             Long id) {
 
