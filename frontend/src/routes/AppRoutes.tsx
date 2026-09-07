@@ -6,7 +6,11 @@ import {
 
 import LoginPage from "../pages/auth/LoginPage";
 import DashboardPage from "../pages/DashboardPage";
+import PlaceholderPage from "../pages/PlaceholderPage";
+import PersonelPage from "../pages/PersonelPage";
+
 import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
 import MainLayout from "../layouts/MainLayout";
 
 const AppRoutes = () => {
@@ -25,10 +29,74 @@ const AppRoutes = () => {
         {/* Ortak uygulama tasarımı */}
         <Route element={<MainLayout />}>
 
+          {/* ADMIN + BIRIM_YETKILISI */}
           <Route
             path="/"
             element={<DashboardPage />}
           />
+
+          <Route
+  path="/personeller"
+  element={<PersonelPage />}
+/>
+
+
+          <Route
+            path="/gorevler"
+            element={
+              <PlaceholderPage
+                title="Görevler"
+                description="Görev kayıt ve yönetim işlemleri."
+              />
+            }
+          />
+
+          <Route
+            path="/gorev-dagitim"
+            element={
+              <PlaceholderPage
+                title="Görev Dağıtımı"
+                description="Personel görev dağıtım ve öneri işlemleri."
+              />
+            }
+          />
+
+          {/* Sadece ADMIN */}
+          <Route
+            element={
+              <RoleRoute allowedRoles={["ADMIN"]} />
+            }
+          >
+            <Route
+              path="/birimler"
+              element={
+                <PlaceholderPage
+                  title="Birimler"
+                  description="Emniyet birimlerinin yönetimi."
+                />
+              }
+            />
+
+            <Route
+              path="/gorev-turleri"
+              element={
+                <PlaceholderPage
+                  title="Görev Türleri"
+                  description="Görev türlerinin tanımlanması ve yönetimi."
+                />
+              }
+            />
+
+            <Route
+              path="/kullanicilar"
+              element={
+                <PlaceholderPage
+                  title="Kullanıcı Yönetimi"
+                  description="Sistem kullanıcıları ve yetkilendirme işlemleri."
+                />
+              }
+            />
+          </Route>
 
         </Route>
 

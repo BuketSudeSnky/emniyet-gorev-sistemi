@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { getAuth } from "./../utils/authStorage";
+import { getAuth } from "../utils/authStorage";
 
 const Sidebar = () => {
   const auth = getAuth();
