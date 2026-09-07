@@ -8,6 +8,7 @@ import LoginPage from "../pages/auth/LoginPage";
 import DashboardPage from "../pages/DashboardPage";
 import PlaceholderPage from "../pages/PlaceholderPage";
 import PersonelPage from "../pages/PersonelPage";
+import BirimlerPage from "../pages/admin/BirimlerPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
@@ -16,7 +17,6 @@ import MainLayout from "../layouts/MainLayout";
 const AppRoutes = () => {
   return (
     <Routes>
-
       {/* Giriş */}
       <Route
         path="/login"
@@ -25,10 +25,8 @@ const AppRoutes = () => {
 
       {/* Giriş yapılması gereken alan */}
       <Route element={<ProtectedRoute />}>
-
         {/* Ortak uygulama tasarımı */}
         <Route element={<MainLayout />}>
-
           {/* ADMIN + BIRIM_YETKILISI */}
           <Route
             path="/"
@@ -36,10 +34,9 @@ const AppRoutes = () => {
           />
 
           <Route
-  path="/personeller"
-  element={<PersonelPage />}
-/>
-
+            path="/personeller"
+            element={<PersonelPage />}
+          />
 
           <Route
             path="/gorevler"
@@ -69,12 +66,7 @@ const AppRoutes = () => {
           >
             <Route
               path="/birimler"
-              element={
-                <PlaceholderPage
-                  title="Birimler"
-                  description="Emniyet birimlerinin yönetimi."
-                />
-              }
+              element={<BirimlerPage />}
             />
 
             <Route
@@ -97,9 +89,7 @@ const AppRoutes = () => {
               }
             />
           </Route>
-
         </Route>
-
       </Route>
 
       {/* Bulunamayan adresler */}
@@ -107,7 +97,6 @@ const AppRoutes = () => {
         path="*"
         element={<Navigate to="/" replace />}
       />
-
     </Routes>
   );
 };
