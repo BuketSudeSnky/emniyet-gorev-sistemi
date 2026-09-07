@@ -17,7 +17,7 @@ public class BirimService {
     }
 
     public List<Birim> tumBirimleriGetir() {
-        return birimRepository.findByAktifTrue();
+        return birimRepository.findAll();
     }
 
     public Birim birimEkle(Birim birim) {
@@ -33,7 +33,6 @@ public class BirimService {
                         ));
 
         mevcutBirim.setAd(yeniBirim.getAd());
-        mevcutBirim.setAktif(yeniBirim.getAktif());
 
         return birimRepository.save(mevcutBirim);
     }
