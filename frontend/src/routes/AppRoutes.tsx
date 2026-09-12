@@ -6,7 +6,6 @@ import {
 
 import LoginPage from "../pages/auth/LoginPage";
 import DashboardPage from "../pages/DashboardPage";
-import PlaceholderPage from "../pages/PlaceholderPage";
 import PersonelPage from "../pages/PersonelPage";
 import GorevlerPage from "../pages/GorevlerPage";
 import GorevDagitimPage from "../pages/GorevDagitimPage";
@@ -17,6 +16,7 @@ import GorevTurleriPage from "../pages/admin/GorevTurleriPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
 import MainLayout from "../layouts/MainLayout";
+import KullanicilarPage from "../pages/KullanicilarPage";
 
 const AppRoutes = () => {
   return (
@@ -69,14 +69,9 @@ const AppRoutes = () => {
             />
 
             <Route
-              path="/kullanicilar"
-              element={
-                <PlaceholderPage
-                  title="Kullanıcı Yönetimi"
-                  description="Sistem kullanıcıları ve yetkilendirme işlemleri."
-                />
-              }
-            />
+  path="/kullanicilar"
+  element={<KullanicilarPage />}
+/>
           </Route>
         </Route>
       </Route>
