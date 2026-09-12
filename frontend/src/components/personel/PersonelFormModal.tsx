@@ -1,14 +1,18 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import { createPersonel } from "../../api/personel";
+
 import type {
   Cinsiyet,
   KanGrubu,
   PersonelRequest,
 } from "../../types/personel";
+
 import type { Birim } from "../../api/birim";
+
 import { getAuth } from "../../utils/authStorage";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 import Input from "../ui/Input";
@@ -45,6 +49,8 @@ const PersonelFormModal = ({
   );
 
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   const handleSubmit = async (
@@ -104,17 +110,20 @@ const PersonelFormModal = ({
         Number(birimId)
       );
 
-      onSuccess();
+      await onSuccess();
+
+      toast.success(
+        `${ad.trim()} ${soyad.trim()} personeli başarıyla eklendi.`
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Personel eklenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personel eklenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -138,7 +147,8 @@ const PersonelFormModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            disabled={loading}
+            className="rounded-lg px-3 py-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ✕
           </button>
@@ -149,28 +159,40 @@ const PersonelFormModal = ({
             <Input
               label="Ad"
               value={ad}
-              onChange={(e) => setAd(e.target.value)}
+              onChange={(e) => {
+                setAd(e.target.value);
+                setError("");
+              }}
               placeholder="Personelin adı"
             />
 
             <Input
               label="Soyad"
               value={soyad}
-              onChange={(e) => setSoyad(e.target.value)}
+              onChange={(e) => {
+                setSoyad(e.target.value);
+                setError("");
+              }}
               placeholder="Personelin soyadı"
             />
 
             <Input
               label="Sicil No"
               value={sicilNo}
-              onChange={(e) => setSicilNo(e.target.value)}
+              onChange={(e) => {
+                setSicilNo(e.target.value);
+                setError("");
+              }}
               placeholder="Sicil numarası"
             />
 
             <Input
               label="Telefon"
               value={telefon}
-              onChange={(e) => setTelefon(e.target.value)}
+              onChange={(e) => {
+                setTelefon(e.target.value);
+                setError("");
+              }}
               placeholder="05XXXXXXXXX"
               maxLength={11}
             />
@@ -183,11 +205,12 @@ const PersonelFormModal = ({
 
               <select
                 value={cinsiyet}
-                onChange={(e) =>
+                onChange={(e) => {
                   setCinsiyet(
                     e.target.value as Cinsiyet | ""
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
               >
                 <option value="">Seçiniz</option>
@@ -204,11 +227,12 @@ const PersonelFormModal = ({
 
               <select
                 value={kanGrubu}
-                onChange={(e) =>
+                onChange={(e) => {
                   setKanGrubu(
                     e.target.value as KanGrubu | ""
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
               >
                 <option value="">Seçiniz</option>
@@ -232,9 +256,10 @@ const PersonelFormModal = ({
 
                 <select
                   value={birimId}
-                  onChange={(e) =>
-                    setBirimId(e.target.value)
-                  }
+                  onChange={(e) => {
+                    setBirimId(e.target.value);
+                    setError("");
+                  }}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
                 >
                   <option value="">
@@ -268,9 +293,10 @@ const PersonelFormModal = ({
               <Input
                 label="IBAN"
                 value={iban}
-                onChange={(e) =>
-                  setIban(e.target.value.toUpperCase())
-                }
+                onChange={(e) => {
+                  setIban(e.target.value.toUpperCase());
+                  setError("");
+                }}
                 placeholder="TRXXXXXXXXXXXXXXXXXXXXXXXX"
                 maxLength={31}
               />
@@ -282,7 +308,7 @@ const PersonelFormModal = ({
             </div>
           </div>
 
-          {/* Hata */}
+          {/* Form doğrulama hatası */}
           {error && (
             <div className="mx-6 mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}

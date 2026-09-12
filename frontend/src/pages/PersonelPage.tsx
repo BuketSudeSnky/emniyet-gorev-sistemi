@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   filterPersoneller,
@@ -17,6 +17,7 @@ import type {
 } from "../types/personel";
 
 import { getAuth } from "../utils/authStorage";
+import { getErrorMessage } from "../utils/getErrorMessage";
 
 import PersonelDetailModal from "../components/personel/PersonelDetailModal";
 import PersonelFormModal from "../components/personel/PersonelFormModal";
@@ -24,6 +25,7 @@ import PersonelEditModal from "../components/personel/PersonelEditModal";
 
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 const PersonelPage = () => {
   const auth = getAuth();
@@ -33,7 +35,6 @@ const PersonelPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [filterLoading, setFilterLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const [selectedPersonel, setSelectedPersonel] =
     useState<Personel | null>(null);
@@ -43,6 +44,12 @@ const PersonelPage = () => {
 
   const [editingPersonel, setEditingPersonel] =
     useState<Personel | null>(null);
+
+  const [pasifeAlinacakPersonel, setPasifeAlinacakPersonel] =
+    useState<Personel | null>(null);
+
+  const [pasifeAlLoading, setPasifeAlLoading] =
+    useState(false);
 
   const [ad, setAd] = useState("");
   const [soyad, setSoyad] = useState("");
@@ -62,7 +69,6 @@ const PersonelPage = () => {
     const loadPage = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const personelData = await getPersoneller();
         setPersoneller(personelData);
@@ -74,15 +80,16 @@ const PersonelPage = () => {
             birimData.filter((birim) => birim.aktif)
           );
         }
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Veriler alınırken bir hata oluştu."
-          );
-        } else {
-          setError("Beklenmeyen bir hata oluştu.");
-        }
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
+            "Veriler alınırken bir hata oluştu."
+          ),
+          {
+            id: "personel-sayfa-yukleme-hatasi",
+          }
+        );
       } finally {
         setLoading(false);
       }
@@ -93,26 +100,24 @@ const PersonelPage = () => {
 
   const refreshPersoneller = async () => {
     try {
-      setError("");
-
       const data = await getPersoneller();
       setPersoneller(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Personeller yenilenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personeller yenilenirken bir hata oluştu."
+        ),
+        {
+          id: "personel-yenileme-hatasi",
+        }
+      );
     }
   };
 
   const handleFilter = async () => {
     try {
       setFilterLoading(true);
-      setError("");
 
       const filters: PersonelFilterParams = {};
 
@@ -155,15 +160,13 @@ const PersonelPage = () => {
       const data = await filterPersoneller(filters);
 
       setPersoneller(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Personeller filtrelenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personeller filtrelenirken bir hata oluştu."
+        )
+      );
     } finally {
       setFilterLoading(false);
     }
@@ -172,7 +175,6 @@ const PersonelPage = () => {
   const handleClearFilters = async () => {
     try {
       setFilterLoading(true);
-      setError("");
 
       setAd("");
       setSoyad("");
@@ -186,15 +188,13 @@ const PersonelPage = () => {
       const data = await getPersoneller();
 
       setPersoneller(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Personeller alınırken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personeller alınırken bir hata oluştu."
+        )
+      );
     } finally {
       setFilterLoading(false);
     }
@@ -203,7 +203,6 @@ const PersonelPage = () => {
   const handleShowAll = async () => {
     try {
       setFilterLoading(true);
-      setError("");
 
       setAd("");
       setSoyad("");
@@ -217,46 +216,48 @@ const PersonelPage = () => {
       const data = await filterPersoneller({});
 
       setPersoneller(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Tüm personeller alınırken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Tüm personeller alınırken bir hata oluştu."
+        )
+      );
     } finally {
       setFilterLoading(false);
     }
-    
   };
-  const handlePasifeAl = async (personel: Personel) => {
-  const onay = window.confirm(
-    `${personel.ad} ${personel.soyad} isimli personeli pasife almak istediğinize emin misiniz?`
-  );
 
-  if (!onay) {
-    return;
-  }
-
-  try {
-    setError("");
-
-    await pasifeAlPersonel(personel.id);
-
-    await refreshPersoneller();
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      setError(
-        err.response?.data?.message ||
-          "Personel pasife alınırken bir hata oluştu."
-      );
-    } else {
-      setError("Beklenmeyen bir hata oluştu.");
+  const handlePasifeAl = async () => {
+    if (!pasifeAlinacakPersonel) {
+      return;
     }
-  }
-};
+
+    try {
+      setPasifeAlLoading(true);
+
+      await pasifeAlPersonel(
+        pasifeAlinacakPersonel.id
+      );
+
+      toast.success(
+        `${pasifeAlinacakPersonel.ad} ${pasifeAlinacakPersonel.soyad} pasife alındı.`
+      );
+
+      setPasifeAlinacakPersonel(null);
+
+      await refreshPersoneller();
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personel pasife alınırken bir hata oluştu."
+        )
+      );
+    } finally {
+      setPasifeAlLoading(false);
+    }
+  };
 
   const kanGrubuLabel: Record<KanGrubu, string> = {
     A_POZITIF: "A+",
@@ -308,28 +309,36 @@ const PersonelPage = () => {
           <Input
             label="Sicil No"
             value={sicilNo}
-            onChange={(e) => setSicilNo(e.target.value)}
+            onChange={(e) =>
+              setSicilNo(e.target.value)
+            }
             placeholder="Örn. TEST001"
           />
 
           <Input
             label="Ad"
             value={ad}
-            onChange={(e) => setAd(e.target.value)}
+            onChange={(e) =>
+              setAd(e.target.value)
+            }
             placeholder="Ad"
           />
 
           <Input
             label="Soyad"
             value={soyad}
-            onChange={(e) => setSoyad(e.target.value)}
+            onChange={(e) =>
+              setSoyad(e.target.value)
+            }
             placeholder="Soyad"
           />
 
           <Input
             label="Telefon"
             value={telefon}
-            onChange={(e) => setTelefon(e.target.value)}
+            onChange={(e) =>
+              setTelefon(e.target.value)
+            }
             placeholder="05..."
           />
 
@@ -342,14 +351,20 @@ const PersonelPage = () => {
               value={cinsiyet}
               onChange={(e) =>
                 setCinsiyet(
-                  e.target.value as Cinsiyet | ""
+                  e.target.value as
+                    | Cinsiyet
+                    | ""
                 )
               }
               className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
             >
               <option value="">Tümü</option>
-              <option value="ERKEK">Erkek</option>
-              <option value="KADIN">Kadın</option>
+              <option value="ERKEK">
+                Erkek
+              </option>
+              <option value="KADIN">
+                Kadın
+              </option>
             </select>
           </div>
 
@@ -362,20 +377,38 @@ const PersonelPage = () => {
               value={kanGrubu}
               onChange={(e) =>
                 setKanGrubu(
-                  e.target.value as KanGrubu | ""
+                  e.target.value as
+                    | KanGrubu
+                    | ""
                 )
               }
               className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
             >
               <option value="">Tümü</option>
-              <option value="A_POZITIF">A+</option>
-              <option value="A_NEGATIF">A-</option>
-              <option value="B_POZITIF">B+</option>
-              <option value="B_NEGATIF">B-</option>
-              <option value="AB_POZITIF">AB+</option>
-              <option value="AB_NEGATIF">AB-</option>
-              <option value="SIFIR_POZITIF">0+</option>
-              <option value="SIFIR_NEGATIF">0-</option>
+              <option value="A_POZITIF">
+                A+
+              </option>
+              <option value="A_NEGATIF">
+                A-
+              </option>
+              <option value="B_POZITIF">
+                B+
+              </option>
+              <option value="B_NEGATIF">
+                B-
+              </option>
+              <option value="AB_POZITIF">
+                AB+
+              </option>
+              <option value="AB_NEGATIF">
+                AB-
+              </option>
+              <option value="SIFIR_POZITIF">
+                0+
+              </option>
+              <option value="SIFIR_NEGATIF">
+                0-
+              </option>
             </select>
           </div>
 
@@ -388,7 +421,9 @@ const PersonelPage = () => {
               <select
                 value={birimId}
                 onChange={(e) =>
-                  setBirimId(e.target.value)
+                  setBirimId(
+                    e.target.value
+                  )
                 }
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
               >
@@ -396,14 +431,16 @@ const PersonelPage = () => {
                   Tüm Birimler
                 </option>
 
-                {birimler.map((birim) => (
-                  <option
-                    key={birim.id}
-                    value={birim.id}
-                  >
-                    {birim.ad}
-                  </option>
-                ))}
+                {birimler.map(
+                  (birim) => (
+                    <option
+                      key={birim.id}
+                      value={birim.id}
+                    >
+                      {birim.ad}
+                    </option>
+                  )
+                )}
               </select>
             </div>
           )}
@@ -421,8 +458,12 @@ const PersonelPage = () => {
               className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
             >
               <option value="">Tümü</option>
-              <option value="true">Aktif</option>
-              <option value="false">Pasif</option>
+              <option value="true">
+                Aktif
+              </option>
+              <option value="false">
+                Pasif
+              </option>
             </select>
           </div>
         </div>
@@ -452,13 +493,6 @@ const PersonelPage = () => {
           </Button>
         </div>
       </div>
-
-      {/* Hata */}
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* Tablo */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -510,87 +544,103 @@ const PersonelPage = () => {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {personeller.map((personel) => (
-                  <tr
-                    key={personel.id}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-900">
-                      {personel.sicilNo}
-                    </td>
+                {personeller.map(
+                  (personel) => (
+                    <tr
+                      key={personel.id}
+                      className="transition-colors hover:bg-slate-50"
+                    >
+                      <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-900">
+                        {personel.sicilNo}
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-700">
-                      {personel.ad} {personel.soyad}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-700">
+                        {personel.ad}{" "}
+                        {personel.soyad}
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-700">
-                      {personel.birim.ad}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-700">
+                        {personel.birim.ad}
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-700">
-                      {personel.cinsiyet === "ERKEK"
-                        ? "Erkek"
-                        : "Kadın"}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-700">
+                        {personel.cinsiyet ===
+                        "ERKEK"
+                          ? "Erkek"
+                          : "Kadın"}
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-700">
-                      {personel.telefon}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-700">
+                        {personel.telefon}
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-700">
-                      {kanGrubuLabel[personel.kanGrubu]}
-                    </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-700">
+                        {
+                          kanGrubuLabel[
+                            personel
+                              .kanGrubu
+                          ]
+                        }
+                      </td>
 
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          personel.aktif
-                            ? "bg-green-50 text-green-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {personel.aktif
-                          ? "Aktif"
-                          : "Pasif"}
-                      </span>
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedPersonel(personel)
-                          }
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            personel.aktif
+                              ? "bg-green-50 text-green-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
                         >
-                          Detay
-                        </button>
+                          {personel.aktif
+                            ? "Aktif"
+                            : "Pasif"}
+                        </span>
+                      </td>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingPersonel(personel)
-                          }
-                          className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                        >
-                          Düzenle
-                        </button>
-                          
+                      <td className="whitespace-nowrap px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedPersonel(
+                                personel
+                              )
+                            }
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                          >
+                            Detay
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditingPersonel(
+                                personel
+                              )
+                            }
+                            className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                          >
+                            Düzenle
+                          </button>
+
                           {personel.aktif && (
-  <button
-    type="button"
-    onClick={() => handlePasifeAl(personel)}
-    className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
-  >
-    Pasife Al
-  </button>
-)}
-
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPasifeAlinacakPersonel(
+                                  personel
+                                )
+                              }
+                              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+                            >
+                              Pasife Al
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -614,7 +664,9 @@ const PersonelPage = () => {
           onClose={() =>
             setShowPersonelForm(false)
           }
-          onSuccess={refreshPersoneller}
+          onSuccess={
+            refreshPersoneller
+          }
         />
       )}
 
@@ -626,7 +678,28 @@ const PersonelPage = () => {
           onClose={() =>
             setEditingPersonel(null)
           }
-          onSuccess={refreshPersoneller}
+          onSuccess={
+            refreshPersoneller
+          }
+        />
+      )}
+
+      {/* Personel pasife alma onay modalı */}
+      {pasifeAlinacakPersonel && (
+        <ConfirmModal
+          title="Personeli Pasife Al"
+          message={`${pasifeAlinacakPersonel.ad} ${pasifeAlinacakPersonel.soyad} isimli personeli pasife almak istediğinize emin misiniz?`}
+          confirmText="Pasife Al"
+          cancelText="İptal"
+          loading={pasifeAlLoading}
+          onConfirm={
+            handlePasifeAl
+          }
+          onCancel={() =>
+            setPasifeAlinacakPersonel(
+              null
+            )
+          }
         />
       )}
     </div>

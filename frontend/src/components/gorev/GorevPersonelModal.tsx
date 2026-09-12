@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import type { Gorev } from "../../api/gorev";
 
@@ -22,7 +22,10 @@ import {
 
 import type { Personel } from "../../types/personel";
 
+import { getErrorMessage } from "../../utils/getErrorMessage";
+
 import Button from "../ui/Button";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface GorevPersonelModalProps {
   gorev: Gorev;
@@ -59,9 +62,9 @@ const GorevPersonelModal = ({
   ] = useState(false);
 
   const [
-    error,
-    setError,
-  ] = useState("");
+    gorevdenCikarilacakPersonel,
+    setGorevdenCikarilacakPersonel,
+  ] = useState<Personel | null>(null);
 
   /*
    * Göreve atanmış personelleri ve
@@ -88,24 +91,16 @@ const GorevPersonelModal = ({
         setAtananPersoneller(
           atamaData
         );
-
-        setError("");
-      } catch (err) {
-        if (
-          axios.isAxiosError(
-            err
-          )
-        ) {
-          setError(
-            err.response?.data
-              ?.message ||
-              "Personel bilgileri yüklenirken bir hata oluştu."
-          );
-        } else {
-          setError(
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
             "Personel bilgileri yüklenirken bir hata oluştu."
-          );
-        }
+          ),
+          {
+            id: "gorev-personel-yukleme-hatasi",
+          }
+        );
       } finally {
         setLoading(false);
       }
@@ -117,45 +112,58 @@ const GorevPersonelModal = ({
    * Modal açıldığında verileri yükler.
    */
   useEffect(() => {
-  let aktif = true;
+    let aktif = true;
 
-  Promise.all([
-    getPersoneller(),
-    getGoreveAtananPersoneller(gorev.id),
-  ])
-    .then(([personelData, atamaData]) => {
-      if (!aktif) {
-        return;
-      }
+    const fetchData = async () => {
+      try {
+        const [
+          personelData,
+          atamaData,
+        ] = await Promise.all([
+          getPersoneller(),
+          getGoreveAtananPersoneller(
+            gorev.id
+          ),
+        ]);
 
-      setPersoneller(personelData);
-      setAtananPersoneller(atamaData);
-      setError("");
-      setLoading(false);
-    })
-    .catch((err) => {
-      if (!aktif) {
-        return;
-      }
+        if (!aktif) {
+          return;
+        }
 
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
+        setPersoneller(
+          personelData
+        );
+
+        setAtananPersoneller(
+          atamaData
+        );
+      } catch (error) {
+        if (!aktif) {
+          return;
+        }
+
+        toast.error(
+          getErrorMessage(
+            error,
             "Personel bilgileri yüklenirken bir hata oluştu."
+          ),
+          {
+            id: "gorev-personel-ilk-yukleme-hatasi",
+          }
         );
-      } else {
-        setError(
-          "Personel bilgileri yüklenirken bir hata oluştu."
-        );
+      } finally {
+        if (aktif) {
+          setLoading(false);
+        }
       }
+    };
 
-      setLoading(false);
-    });
+    void fetchData();
 
-  return () => {
-    aktif = false;
-  };
-}, [gorev.id]);
+    return () => {
+      aktif = false;
+    };
+  }, [gorev.id]);
 
   /*
    * Göreve zaten atanmış personellerin
@@ -225,108 +233,88 @@ const GorevPersonelModal = ({
   /*
    * Seçilen personelleri göreve atar.
    */
-  const handleAta =
-    async () => {
-      if (
-        seciliPersonelIdleri.length ===
-        0
-      ) {
-        setError(
-          "En az bir personel seçmelisiniz."
-        );
+  const handleAta = async () => {
+    if (
+      seciliPersonelIdleri.length ===
+      0
+    ) {
+      toast.error(
+        "En az bir personel seçmelisiniz."
+      );
 
-        return;
-      }
+      return;
+    }
 
-      try {
-        setIslemYapiliyor(
-          true
-        );
+    try {
+      setIslemYapiliyor(true);
 
-        setError("");
+      await personelleriGoreveAta(
+        gorev.id,
+        seciliPersonelIdleri
+      );
 
-        await personelleriGoreveAta(
-          gorev.id,
-          seciliPersonelIdleri
-        );
+      const atananKisiSayisi =
+        seciliPersonelIdleri.length;
 
-        setSeciliPersonelIdleri(
-          []
-        );
+      setSeciliPersonelIdleri(
+        []
+      );
 
-        await loadData();
-      } catch (err) {
-        if (
-          axios.isAxiosError(
-            err
-          )
-        ) {
-          setError(
-            err.response?.data
-              ?.message ||
-              "Personel göreve atanırken bir hata oluştu."
-          );
-        } else {
-          setError(
-            "Personel göreve atanırken bir hata oluştu."
-          );
-        }
-      } finally {
-        setIslemYapiliyor(
-          false
-        );
-      }
-    };
+      await loadData();
+
+      toast.success(
+        `${atananKisiSayisi} personel göreve atandı.`
+      );
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personel göreve atanırken bir hata oluştu."
+        )
+      );
+    } finally {
+      setIslemYapiliyor(false);
+    }
+  };
 
   /*
-   * Atanmış personeli görevden çıkarır.
+   * ConfirmModal onayından sonra personeli
+   * görevden çıkarır.
    */
   const handleGorevdenCikar =
-    async (
-      personel: Personel
-    ) => {
-      const onay =
-        window.confirm(
-          `${personel.ad} ${personel.soyad} isimli personeli görevden çıkarmak istediğinize emin misiniz?`
-        );
-
-      if (!onay) {
+    async () => {
+      if (
+        !gorevdenCikarilacakPersonel
+      ) {
         return;
       }
 
       try {
-        setIslemYapiliyor(
-          true
-        );
-
-        setError("");
+        setIslemYapiliyor(true);
 
         await personeliGorevdenCikar(
           gorev.id,
-          personel.id
+          gorevdenCikarilacakPersonel.id
+        );
+
+        toast.success(
+          `${gorevdenCikarilacakPersonel.ad} ${gorevdenCikarilacakPersonel.soyad} görevden çıkarıldı.`
+        );
+
+        setGorevdenCikarilacakPersonel(
+          null
         );
 
         await loadData();
-      } catch (err) {
-        if (
-          axios.isAxiosError(
-            err
-          )
-        ) {
-          setError(
-            err.response?.data
-              ?.message ||
-              "Personel görevden çıkarılırken bir hata oluştu."
-          );
-        } else {
-          setError(
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
             "Personel görevden çıkarılırken bir hata oluştu."
-          );
-        }
-      } finally {
-        setIslemYapiliyor(
-          false
+          )
         );
+      } finally {
+        setIslemYapiliyor(false);
       }
     };
 
@@ -366,6 +354,9 @@ const GorevPersonelModal = ({
               onClick={
                 onClose
               }
+              disabled={
+                islemYapiliyor
+              }
             >
               Kapat
             </Button>
@@ -373,34 +364,22 @@ const GorevPersonelModal = ({
         </div>
 
         <div className="space-y-6 p-6">
-
-          {/* HATA */}
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
           {loading ? (
             <div className="py-8 text-center text-sm text-slate-500">
-              Personeller
-              yükleniyor...
+              Personeller yükleniyor...
             </div>
           ) : (
             <>
               {/* ATANMIŞ PERSONELLER */}
               <div>
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  Göreve Atanmış
-                  Personeller
+                  Göreve Atanmış Personeller
                 </h3>
 
                 {atananPersoneller.length ===
                 0 ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                    Bu göreve henüz
-                    personel
-                    atanmadı.
+                    Bu göreve henüz personel atanmadı.
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-lg border border-slate-200">
@@ -473,13 +452,12 @@ const GorevPersonelModal = ({
                                     islemYapiliyor
                                   }
                                   onClick={() =>
-                                    void handleGorevdenCikar(
+                                    setGorevdenCikarilacakPersonel(
                                       atama.personel
                                     )
                                   }
                                 >
-                                  Görevden
-                                  Çıkar
+                                  Görevden Çıkar
                                 </Button>
                               </td>
                             </tr>
@@ -500,9 +478,7 @@ const GorevPersonelModal = ({
                 {uygunPersoneller.length ===
                 0 ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                    Atanabilecek
-                    uygun personel
-                    bulunamadı.
+                    Atanabilecek uygun personel bulunamadı.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -548,6 +524,9 @@ const GorevPersonelModal = ({
                                       handleCheckboxChange(
                                         personel.id
                                       )
+                                    }
+                                    disabled={
+                                      islemYapiliyor
                                     }
                                     className="h-4 w-4 rounded border-slate-300"
                                   />
@@ -596,8 +575,7 @@ const GorevPersonelModal = ({
                           void handleAta()
                         }
                       >
-                        Seçilen
-                        Personelleri Ata
+                        Seçilen Personelleri Ata
                       </Button>
                     </div>
                   </div>
@@ -607,6 +585,26 @@ const GorevPersonelModal = ({
           )}
         </div>
       </div>
+
+      {gorevdenCikarilacakPersonel && (
+        <ConfirmModal
+          title="Personeli Görevden Çıkar"
+          message={`${gorevdenCikarilacakPersonel.ad} ${gorevdenCikarilacakPersonel.soyad} isimli personeli görevden çıkarmak istediğinize emin misiniz?`}
+          confirmText="Görevden Çıkar"
+          cancelText="İptal"
+          loading={
+            islemYapiliyor
+          }
+          onConfirm={
+            handleGorevdenCikar
+          }
+          onCancel={() =>
+            setGorevdenCikarilacakPersonel(
+              null
+            )
+          }
+        />
+      )}
     </div>
   );
 };

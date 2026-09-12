@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+
 import {
   getKullanicilar,
   pasifeAlKullanici,
   aktifeAlKullanici,
   type Kullanici,
 } from "../api/kullanici";
+
+import { getErrorMessage } from "../utils/getErrorMessage";
 
 import KullaniciFormModal from "../components/kullanici/KullaniciFormModal";
 import KullaniciEditModal from "../components/kullanici/KullaniciEditModal";
@@ -13,7 +17,6 @@ import KullaniciSifreModal from "../components/kullanici/KullaniciSifreModal";
 export default function KullanicilarPage() {
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [formModalAcik, setFormModalAcik] = useState(false);
 
@@ -28,29 +31,47 @@ export default function KullanicilarPage() {
 
   const kullanicilariYukle = async () => {
     try {
-      setError("");
-
       const data = await getKullanicilar();
       setKullanicilar(data);
-    } catch {
-      setError("Kullanıcılar yüklenirken bir hata oluştu.");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Kullanıcılar yüklenirken bir hata oluştu."
+        ),
+        {
+          id: "kullanicilar-yukleme-hatasi",
+        }
+      );
     }
   };
 
   const kullaniciDurumDegistir = async (kullanici: Kullanici) => {
     try {
-      setError("");
       setDurumDegistirilenId(kullanici.id);
 
       if (kullanici.aktif) {
         await pasifeAlKullanici(kullanici.id);
+
+        toast.success(
+          `${kullanici.sicilNo} kullanıcısı pasife alındı.`
+        );
       } else {
         await aktifeAlKullanici(kullanici.id);
+
+        toast.success(
+          `${kullanici.sicilNo} kullanıcısı aktife alındı.`
+        );
       }
 
       await kullanicilariYukle();
-    } catch {
-      setError("Kullanıcı durumu değiştirilirken bir hata oluştu.");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Kullanıcı durumu değiştirilirken bir hata oluştu."
+        )
+      );
     } finally {
       setDurumDegistirilenId(null);
     }
@@ -65,9 +86,17 @@ export default function KullanicilarPage() {
           setKullanicilar(data);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (active) {
-          setError("Kullanıcılar yüklenirken bir hata oluştu.");
+          toast.error(
+            getErrorMessage(
+              error,
+              "Kullanıcılar yüklenirken bir hata oluştu."
+            ),
+            {
+              id: "kullanicilar-yukleme-hatasi",
+            }
+          );
         }
       })
       .finally(() => {
@@ -84,7 +113,9 @@ export default function KullanicilarPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <p>Kullanıcılar yükleniyor...</p>
+        <p className="text-sm text-gray-500">
+          Kullanıcılar yükleniyor...
+        </p>
       </div>
     );
   }
@@ -111,12 +142,6 @@ export default function KullanicilarPage() {
             Yeni Kullanıcı Ekle
           </button>
         </div>
-
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
 
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="overflow-x-auto">
@@ -224,7 +249,7 @@ export default function KullanicilarPage() {
                   </tr>
                 ))}
 
-                {kullanicilar.length === 0 && !error && (
+                {kullanicilar.length === 0 && (
                   <tr>
                     <td
                       colSpan={5}

@@ -1,10 +1,12 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   updateGorevTuru,
   type GorevTuru,
 } from "../../api/gorevTuru";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 import Input from "../ui/Input";
@@ -21,17 +23,22 @@ const GorevTuruEditModal = ({
   onSuccess,
 }: GorevTuruEditModalProps) => {
   const [ad, setAd] = useState(gorevTuru.ad);
+
   const [aciklama, setAciklama] = useState(
     gorevTuru.aciklama || ""
   );
 
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+
+    setError("");
 
     if (!ad.trim()) {
       setError("Görev türü adı boş bırakılamaz.");
@@ -40,7 +47,6 @@ const GorevTuruEditModal = ({
 
     try {
       setLoading(true);
-      setError("");
 
       await updateGorevTuru(gorevTuru.id, {
         ad: ad.trim(),
@@ -48,18 +54,19 @@ const GorevTuruEditModal = ({
       });
 
       await onSuccess();
+
+      toast.success(
+        `${ad.trim()} görev türü başarıyla güncellendi.`
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görev türü güncellenirken bir hata oluştu."
-        );
-      } else {
-        setError(
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
           "Görev türü güncellenirken bir hata oluştu."
-        );
-      }
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -78,12 +85,6 @@ const GorevTuruEditModal = ({
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         <form
           onSubmit={handleSubmit}
           className="space-y-4"
@@ -91,7 +92,10 @@ const GorevTuruEditModal = ({
           <Input
             label="Görev Türü Adı"
             value={ad}
-            onChange={(e) => setAd(e.target.value)}
+            onChange={(e) => {
+              setAd(e.target.value);
+              setError("");
+            }}
             disabled={loading}
           />
 
@@ -110,6 +114,12 @@ const GorevTuruEditModal = ({
               className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button

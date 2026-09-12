@@ -1,11 +1,13 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   updateGorev,
   type Gorev,
   type GorevRequest,
 } from "../../api/gorev";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 
@@ -29,15 +31,8 @@ const GorevEditModal = ({
   onClose,
   onSuccess,
 }: GorevEditModalProps) => {
-  /*
-   * Bugünün tarihini YYYY-MM-DD formatında alıyoruz.
-   */
   const bugun = new Date().toLocaleDateString("en-CA");
 
-  /*
-   * Düzenleme ekranı olduğu için state'leri
-   * mevcut görevin bilgileriyle başlatıyoruz.
-   */
   const [tarih, setTarih] = useState(gorev.tarih);
 
   const [baslangicSaati, setBaslangicSaati] =
@@ -66,6 +61,7 @@ const GorevEditModal = ({
   const [loading, setLoading] =
     useState(false);
 
+  // Sadece form doğrulama hataları için
   const [error, setError] =
     useState("");
 
@@ -74,20 +70,17 @@ const GorevEditModal = ({
   ) => {
     e.preventDefault();
 
+    setError("");
+
     if (!tarih) {
       setError("Görev tarihi seçilmelidir.");
       return;
     }
 
     /*
-     * Eğer seçilen tarih geçmişteyse,
-     * sadece görevin zaten var olan eski tarihi olabilir.
-     *
-     * Örnek:
-     * Mevcut görev: 2026-09-10
-     * 2026-09-10 -> izin var
-     * 2026-09-11 -> izin yok, geçmiş tarih
-     * 2026-09-12 -> bugün, izin var
+     * Geçmiş bir görev:
+     * - mevcut eski tarihini koruyabilir
+     * - başka bir geçmiş tarihe değiştirilemez
      */
     if (
       tarih < bugun &&
@@ -122,7 +115,6 @@ const GorevEditModal = ({
 
     try {
       setLoading(true);
-      setError("");
 
       const data: GorevRequest = {
         tarih,
@@ -130,7 +122,8 @@ const GorevEditModal = ({
           baslangicSaati || null,
         bitisSaati:
           bitisSaati || null,
-        aciklama: aciklama.trim(),
+        aciklama:
+          aciklama.trim(),
       };
 
       await updateGorev(
@@ -142,18 +135,18 @@ const GorevEditModal = ({
 
       await onSuccess();
 
+      toast.success(
+        "Görev başarıyla güncellendi."
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görev güncellenirken bir hata oluştu."
-        );
-      } else {
-        setError(
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
           "Görev güncellenirken bir hata oluştu."
-        );
-      }
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -162,7 +155,6 @@ const GorevEditModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-
         {/* BAŞLIK */}
         <div className="mb-5">
           <h2 className="text-xl font-bold text-slate-900">
@@ -174,18 +166,10 @@ const GorevEditModal = ({
           </p>
         </div>
 
-        {/* HATA */}
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         <form
           onSubmit={handleSubmit}
           className="space-y-4"
         >
-
           {/* BİRİM */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -194,9 +178,10 @@ const GorevEditModal = ({
 
             <select
               value={birimId}
-              onChange={(e) =>
-                setBirimId(e.target.value)
-              }
+              onChange={(e) => {
+                setBirimId(e.target.value);
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             >
@@ -223,11 +208,10 @@ const GorevEditModal = ({
 
             <select
               value={gorevTuruId}
-              onChange={(e) =>
-                setGorevTuruId(
-                  e.target.value
-                )
-              }
+              onChange={(e) => {
+                setGorevTuruId(e.target.value);
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             >
@@ -256,38 +240,30 @@ const GorevEditModal = ({
 
             <input
               type="date"
-              /*
-               * Eğer görev zaten geçmişteyse
-               * mevcut tarih seçilebilir.
-               *
-               * Eğer görev bugün/gelecekteyse
-               * bugünden önce seçim yapılamaz.
-               */
               min={
                 gorev.tarih < bugun
                   ? gorev.tarih
                   : bugun
               }
               value={tarih}
-              onChange={(e) =>
-                setTarih(e.target.value)
-              }
+              onChange={(e) => {
+                setTarih(e.target.value);
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             />
 
             {gorev.tarih < bugun && (
               <p className="mt-1 text-xs text-slate-500">
-                Geçmiş görevlerde mevcut tarih
-                korunabilir ancak başka bir geçmiş
-                tarihe değiştirilemez.
+                Geçmiş görevlerde mevcut tarih korunabilir
+                ancak başka bir geçmiş tarihe değiştirilemez.
               </p>
             )}
           </div>
 
           {/* SAATLER */}
           <div className="grid gap-4 md:grid-cols-2">
-
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
                 Başlangıç Saati
@@ -296,11 +272,12 @@ const GorevEditModal = ({
               <input
                 type="time"
                 value={baslangicSaati}
-                onChange={(e) =>
+                onChange={(e) => {
                   setBaslangicSaati(
                     e.target.value
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 disabled={loading}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               />
@@ -314,16 +291,16 @@ const GorevEditModal = ({
               <input
                 type="time"
                 value={bitisSaati}
-                onChange={(e) =>
+                onChange={(e) => {
                   setBitisSaati(
                     e.target.value
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 disabled={loading}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               />
             </div>
-
           </div>
 
           {/* AÇIKLAMA */}
@@ -335,7 +312,9 @@ const GorevEditModal = ({
             <textarea
               value={aciklama}
               onChange={(e) =>
-                setAciklama(e.target.value)
+                setAciklama(
+                  e.target.value
+                )
               }
               rows={4}
               maxLength={500}
@@ -349,9 +328,15 @@ const GorevEditModal = ({
             </p>
           </div>
 
+          {/* FORM DOĞRULAMA HATASI */}
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* BUTONLAR */}
           <div className="flex justify-end gap-3 pt-2">
-
             <Button
               type="button"
               variant="secondary"
@@ -367,9 +352,7 @@ const GorevEditModal = ({
             >
               Değişiklikleri Kaydet
             </Button>
-
           </div>
-
         </form>
       </div>
     </div>

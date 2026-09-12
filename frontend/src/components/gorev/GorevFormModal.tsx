@@ -1,10 +1,12 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   createGorev,
   type GorevRequest,
 } from "../../api/gorev";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 
@@ -26,23 +28,33 @@ const GorevFormModal = ({
   onClose,
   onSuccess,
 }: GorevFormModalProps) => {
-  const bugun = new Date().toLocaleDateString("en-CA");
+  const bugun =
+    new Date().toLocaleDateString("en-CA");
 
-  const [tarih, setTarih] = useState("");
-  const [baslangicSaati, setBaslangicSaati] =
+  const [tarih, setTarih] =
     useState("");
+
+  const [
+    baslangicSaati,
+    setBaslangicSaati,
+  ] = useState("");
+
   const [bitisSaati, setBitisSaati] =
     useState("");
+
   const [aciklama, setAciklama] =
     useState("");
 
   const [birimId, setBirimId] =
     useState("");
+
   const [gorevTuruId, setGorevTuruId] =
     useState("");
 
   const [loading, setLoading] =
     useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] =
     useState("");
 
@@ -51,8 +63,12 @@ const GorevFormModal = ({
   ) => {
     e.preventDefault();
 
+    setError("");
+
     if (!tarih) {
-      setError("Görev tarihi seçilmelidir.");
+      setError(
+        "Görev tarihi seçilmelidir."
+      );
       return;
     }
 
@@ -64,12 +80,16 @@ const GorevFormModal = ({
     }
 
     if (!birimId) {
-      setError("Birim seçilmelidir.");
+      setError(
+        "Birim seçilmelidir."
+      );
       return;
     }
 
     if (!gorevTuruId) {
-      setError("Görev türü seçilmelidir.");
+      setError(
+        "Görev türü seçilmelidir."
+      );
       return;
     }
 
@@ -86,7 +106,6 @@ const GorevFormModal = ({
 
     try {
       setLoading(true);
-      setError("");
 
       const data: GorevRequest = {
         tarih,
@@ -94,7 +113,8 @@ const GorevFormModal = ({
           baslangicSaati || null,
         bitisSaati:
           bitisSaati || null,
-        aciklama: aciklama.trim(),
+        aciklama:
+          aciklama.trim(),
       };
 
       await createGorev(
@@ -105,18 +125,18 @@ const GorevFormModal = ({
 
       await onSuccess();
 
+      toast.success(
+        "Görev başarıyla oluşturuldu."
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görev eklenirken bir hata oluştu."
-        );
-      } else {
-        setError(
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
           "Görev eklenirken bir hata oluştu."
-        );
-      }
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -135,12 +155,6 @@ const GorevFormModal = ({
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         <form
           onSubmit={handleSubmit}
           className="space-y-4"
@@ -152,9 +166,12 @@ const GorevFormModal = ({
 
             <select
               value={birimId}
-              onChange={(e) =>
-                setBirimId(e.target.value)
-              }
+              onChange={(e) => {
+                setBirimId(
+                  e.target.value
+                );
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             >
@@ -162,14 +179,16 @@ const GorevFormModal = ({
                 Birim seçiniz
               </option>
 
-              {birimler.map((birim) => (
-                <option
-                  key={birim.id}
-                  value={birim.id}
-                >
-                  {birim.ad}
-                </option>
-              ))}
+              {birimler.map(
+                (birim) => (
+                  <option
+                    key={birim.id}
+                    value={birim.id}
+                  >
+                    {birim.ad}
+                  </option>
+                )
+              )}
             </select>
           </div>
 
@@ -180,9 +199,12 @@ const GorevFormModal = ({
 
             <select
               value={gorevTuruId}
-              onChange={(e) =>
-                setGorevTuruId(e.target.value)
-              }
+              onChange={(e) => {
+                setGorevTuruId(
+                  e.target.value
+                );
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             >
@@ -193,10 +215,16 @@ const GorevFormModal = ({
               {gorevTurleri.map(
                 (gorevTuru) => (
                   <option
-                    key={gorevTuru.id}
-                    value={gorevTuru.id}
+                    key={
+                      gorevTuru.id
+                    }
+                    value={
+                      gorevTuru.id
+                    }
                   >
-                    {gorevTuru.ad}
+                    {
+                      gorevTuru.ad
+                    }
                   </option>
                 )
               )}
@@ -212,9 +240,12 @@ const GorevFormModal = ({
               type="date"
               min={bugun}
               value={tarih}
-              onChange={(e) =>
-                setTarih(e.target.value)
-              }
+              onChange={(e) => {
+                setTarih(
+                  e.target.value
+                );
+                setError("");
+              }}
               disabled={loading}
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             />
@@ -228,12 +259,15 @@ const GorevFormModal = ({
 
               <input
                 type="time"
-                value={baslangicSaati}
-                onChange={(e) =>
+                value={
+                  baslangicSaati
+                }
+                onChange={(e) => {
                   setBaslangicSaati(
                     e.target.value
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 disabled={loading}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               />
@@ -246,12 +280,15 @@ const GorevFormModal = ({
 
               <input
                 type="time"
-                value={bitisSaati}
-                onChange={(e) =>
+                value={
+                  bitisSaati
+                }
+                onChange={(e) => {
                   setBitisSaati(
                     e.target.value
-                  )
-                }
+                  );
+                  setError("");
+                }}
                 disabled={loading}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
               />
@@ -266,7 +303,9 @@ const GorevFormModal = ({
             <textarea
               value={aciklama}
               onChange={(e) =>
-                setAciklama(e.target.value)
+                setAciklama(
+                  e.target.value
+                )
               }
               rows={4}
               maxLength={500}
@@ -276,9 +315,16 @@ const GorevFormModal = ({
             />
 
             <p className="mt-1 text-right text-xs text-slate-400">
-              {aciklama.length}/500
+              {aciklama.length}
+              /500
             </p>
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button

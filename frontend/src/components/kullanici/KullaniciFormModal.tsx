@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import toast from "react-hot-toast";
+
 import {
   createKullanici,
   getKullanicilar,
   type Rol,
 } from "../../api/kullanici";
+
 import { getBirimler, type Birim } from "../../api/birim";
 import { getPersoneller } from "../../api/personel";
 import type { Personel } from "../../types/personel";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 interface KullaniciFormModalProps {
   onClose: () => void;
@@ -24,10 +28,14 @@ export default function KullaniciFormModal({
 
   const [birimler, setBirimler] = useState<Birim[]>([]);
   const [personeller, setPersoneller] = useState<Personel[]>([]);
-  const [kullaniciSicilleri, setKullaniciSicilleri] = useState<string[]>([]);
+  const [kullaniciSicilleri, setKullaniciSicilleri] = useState<string[]>(
+    []
+  );
 
   const [loading, setLoading] = useState(false);
   const [verilerYukleniyor, setVerilerYukleniyor] = useState(true);
+
+  // Yalnızca form doğrulama hataları için kullanılacak.
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -55,9 +63,14 @@ export default function KullaniciFormModal({
           kullaniciData.map((kullanici) => kullanici.sicilNo)
         );
       })
-      .catch(() => {
+      .catch((error) => {
         if (active) {
-          setError("Kullanıcı oluşturma bilgileri yüklenemedi.");
+          toast.error(
+            getErrorMessage(
+              error,
+              "Kullanıcı oluşturma bilgileri yüklenemedi."
+            )
+          );
         }
       })
       .finally(() => {
@@ -107,13 +120,24 @@ export default function KullaniciFormModal({
     event.preventDefault();
     setError("");
 
+    /*
+     * Bunlar API hatası değil, form doğrulama hatalarıdır.
+     * Bu nedenle modalın içerisinde gösteriyoruz.
+     */
     if (rol === "BIRIM_YETKILISI" && !birimId) {
       setError("Birim yetkilisi için birim seçmelisiniz.");
       return;
     }
 
     if (!secilenPersonel) {
-      setError("Kullanıcı hesabı açılacak personeli seçmelisiniz.");
+      setError(
+        "Kullanıcı hesabı açılacak personeli seçmelisiniz."
+      );
+      return;
+    }
+
+    if (sifre.length < 8) {
+      setError("Şifre en az 8 karakter olmalıdır.");
       return;
     }
 
@@ -131,9 +155,23 @@ export default function KullaniciFormModal({
       });
 
       await onSuccess();
+
+      toast.success(
+        `${secilenPersonel.sicilNo} için kullanıcı hesabı oluşturuldu.`
+      );
+
       onClose();
-    } catch {
-      setError("Kullanıcı oluşturulurken bir hata oluştu.");
+    } catch (error) {
+      /*
+       * Backend/API hataları artık modalın içindeki
+       * kırmızı kutuda değil toast olarak gösterilecek.
+       */
+      toast.error(
+        getErrorMessage(
+          error,
+          "Kullanıcı oluşturulurken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -184,6 +222,7 @@ export default function KullaniciFormModal({
 
                 setRol(yeniRol);
                 setPersonelId("");
+                setError("");
 
                 if (yeniRol === "ADMIN") {
                   setBirimId("");
@@ -213,6 +252,7 @@ export default function KullaniciFormModal({
                 onChange={(e) => {
                   setBirimId(e.target.value);
                   setPersonelId("");
+                  setError("");
                 }}
                 required
                 disabled={verilerYukleniyor}
@@ -241,7 +281,10 @@ export default function KullaniciFormModal({
 
             <select
               value={personelId}
-              onChange={(e) => setPersonelId(e.target.value)}
+              onChange={(e) => {
+                setPersonelId(e.target.value);
+                setError("");
+              }}
               required
               disabled={
                 verilerYukleniyor ||
@@ -260,7 +303,8 @@ export default function KullaniciFormModal({
                   key={personel.id}
                   value={personel.id}
                 >
-                  {personel.ad} {personel.soyad} — {personel.sicilNo}
+                  {personel.ad} {personel.soyad} —{" "}
+                  {personel.sicilNo}
                 </option>
               ))}
             </select>
@@ -269,7 +313,8 @@ export default function KullaniciFormModal({
               (rol === "ADMIN" || birimId) &&
               uygunPersoneller.length === 0 && (
                 <p className="mt-1 text-xs text-gray-500">
-                  Kullanıcı hesabı olmayan uygun personel bulunamadı.
+                  Kullanıcı hesabı olmayan uygun personel
+                  bulunamadı.
                 </p>
               )}
           </div>
@@ -307,7 +352,10 @@ export default function KullaniciFormModal({
             <input
               type="password"
               value={sifre}
-              onChange={(e) => setSifre(e.target.value)}
+              onChange={(e) => {
+                setSifre(e.target.value);
+                setError("");
+              }}
               required
               minLength={8}
               disabled={verilerYukleniyor}

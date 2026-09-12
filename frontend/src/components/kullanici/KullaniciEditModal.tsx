@@ -1,10 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
+import toast from "react-hot-toast";
+
 import {
   updateKullanici,
   type Kullanici,
   type Rol,
 } from "../../api/kullanici";
+
 import { getBirimler, type Birim } from "../../api/birim";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 interface KullaniciEditModalProps {
   kullanici: Kullanici;
@@ -18,12 +22,15 @@ export default function KullaniciEditModal({
   onSuccess,
 }: KullaniciEditModalProps) {
   const [rol, setRol] = useState<Rol>(kullanici.rol);
+
   const [birimId, setBirimId] = useState(
     kullanici.birimId?.toString() ?? ""
   );
 
   const [birimler, setBirimler] = useState<Birim[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -32,12 +39,19 @@ export default function KullaniciEditModal({
     getBirimler()
       .then((data) => {
         if (active) {
-          setBirimler(data.filter((birim) => birim.aktif));
+          setBirimler(
+            data.filter((birim) => birim.aktif)
+          );
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (active) {
-          setError("Birimler yüklenirken bir hata oluştu.");
+          toast.error(
+            getErrorMessage(
+              error,
+              "Birimler yüklenirken bir hata oluştu."
+            )
+          );
         }
       });
 
@@ -53,7 +67,9 @@ export default function KullaniciEditModal({
     setError("");
 
     if (rol === "BIRIM_YETKILISI" && !birimId) {
-      setError("Birim yetkilisi için birim seçmelisiniz.");
+      setError(
+        "Birim yetkilisi için birim seçmelisiniz."
+      );
       return;
     }
 
@@ -70,9 +86,19 @@ export default function KullaniciEditModal({
       });
 
       await onSuccess();
+
+      toast.success(
+        `${kullanici.sicilNo} kullanıcısı güncellendi.`
+      );
+
       onClose();
-    } catch {
-      setError("Kullanıcı güncellenirken bir hata oluştu.");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Kullanıcı güncellenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -101,7 +127,10 @@ export default function KullaniciEditModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 p-6"
+        >
           {error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
               {error}
@@ -134,7 +163,9 @@ export default function KullaniciEditModal({
               value={rol}
               onChange={(e) => {
                 const yeniRol = e.target.value as Rol;
+
                 setRol(yeniRol);
+                setError("");
 
                 if (yeniRol === "ADMIN") {
                   setBirimId("");
@@ -145,7 +176,10 @@ export default function KullaniciEditModal({
               <option value="BIRIM_YETKILISI">
                 Birim Yetkilisi
               </option>
-              <option value="ADMIN">Admin</option>
+
+              <option value="ADMIN">
+                Admin
+              </option>
             </select>
           </div>
 
@@ -157,14 +191,22 @@ export default function KullaniciEditModal({
 
               <select
                 value={birimId}
-                onChange={(e) => setBirimId(e.target.value)}
+                onChange={(e) => {
+                  setBirimId(e.target.value);
+                  setError("");
+                }}
                 required
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
               >
-                <option value="">Birim seçiniz</option>
+                <option value="">
+                  Birim seçiniz
+                </option>
 
                 {birimler.map((birim) => (
-                  <option key={birim.id} value={birim.id}>
+                  <option
+                    key={birim.id}
+                    value={birim.id}
+                  >
                     {birim.ad}
                   </option>
                 ))}
@@ -185,9 +227,11 @@ export default function KullaniciEditModal({
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+              {loading
+                ? "Kaydediliyor..."
+                : "Değişiklikleri Kaydet"}
             </button>
           </div>
         </form>

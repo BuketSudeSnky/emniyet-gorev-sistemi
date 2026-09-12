@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   getGorevDagitimSirasi,
@@ -24,6 +24,8 @@ import {
 } from "../api/gorev";
 
 import { getAuth } from "../utils/authStorage";
+import { getErrorMessage } from "../utils/getErrorMessage";
+
 import Button from "../components/ui/Button";
 
 const GorevDagitimPage = () => {
@@ -75,12 +77,6 @@ const GorevDagitimPage = () => {
     atamaYapiliyor,
     setAtamaYapiliyor,
   ] = useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [success, setSuccess] =
-    useState("");
 
   const auth = getAuth();
 
@@ -151,23 +147,20 @@ const GorevDagitimPage = () => {
             String(authBirimId)
           );
         }
-
-        setError("");
-      } catch (err) {
+      } catch (error) {
         if (!aktif) {
           return;
         }
 
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Sayfa bilgileri yüklenirken bir hata oluştu."
-          );
-        } else {
-          setError(
+        toast.error(
+          getErrorMessage(
+            error,
             "Sayfa bilgileri yüklenirken bir hata oluştu."
-          );
-        }
+          ),
+          {
+            id: "gorev-dagitim-ilk-yukleme-hatasi",
+          }
+        );
       } finally {
         if (aktif) {
           setLoading(false);
@@ -199,50 +192,45 @@ const GorevDagitimPage = () => {
       };
     }
 
-    Promise.resolve()
-      .then(() => {
-        if (!aktif) {
-          return undefined;
-        }
-
+    const fetchGorevler = async () => {
+      try {
         setGorevlerLoading(true);
 
-        return getGorevlerByBirim(
-          Number(birimId)
-        );
-      })
-      .then((data) => {
-        if (!aktif || !data) {
+        const data =
+          await getGorevlerByBirim(
+            Number(birimId)
+          );
+
+        if (!aktif) {
           return;
         }
 
         setGorevler(data);
         setGorevId("");
-        setError("");
-      })
-      .catch((err) => {
+      } catch (error) {
         if (!aktif) {
           return;
         }
 
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Görevler yüklenirken bir hata oluştu."
-          );
-        } else {
-          setError(
-            "Görevler yüklenirken bir hata oluştu."
-          );
-        }
-
         setGorevler([]);
-      })
-      .finally(() => {
+
+        toast.error(
+          getErrorMessage(
+            error,
+            "Görevler yüklenirken bir hata oluştu."
+          ),
+          {
+            id: "dagitim-gorevler-yukleme-hatasi",
+          }
+        );
+      } finally {
         if (aktif) {
           setGorevlerLoading(false);
         }
-      });
+      }
+    };
+
+    void fetchGorevler();
 
     return () => {
       aktif = false;
@@ -290,9 +278,6 @@ const GorevDagitimPage = () => {
               personelId,
             ]
     );
-
-    setSuccess("");
-    setError("");
   };
 
   /*
@@ -302,21 +287,21 @@ const GorevDagitimPage = () => {
   const handleSiralamayiGetir =
     async () => {
       if (!birimId) {
-        setError(
+        toast.error(
           "Lütfen birim seçiniz."
         );
         return;
       }
 
       if (!gorevTuruId) {
-        setError(
+        toast.error(
           "Lütfen görev türü seçiniz."
         );
         return;
       }
 
       if (!gorevId) {
-        setError(
+        toast.error(
           "Lütfen görev seçiniz."
         );
         return;
@@ -324,8 +309,6 @@ const GorevDagitimPage = () => {
 
       try {
         setSiralamayiGetiriyor(true);
-        setError("");
-        setSuccess("");
 
         const [
           dagitimData,
@@ -355,24 +338,16 @@ const GorevDagitimPage = () => {
         setSecilenPersonelIdleri(
           []
         );
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Görev dağıtım sırası alınırken bir hata oluştu."
-          );
-        } else {
-          setError(
-            "Görev dağıtım sırası alınırken bir hata oluştu."
-          );
-        }
-
+      } catch (error) {
         setDagitimSirasi([]);
-        setAtananPersonelIdleri(
-          []
-        );
-        setSecilenPersonelIdleri(
-          []
+        setAtananPersonelIdleri([]);
+        setSecilenPersonelIdleri([]);
+
+        toast.error(
+          getErrorMessage(
+            error,
+            "Görev dağıtım sırası alınırken bir hata oluştu."
+          )
         );
       } finally {
         setSiralamayiGetiriyor(
@@ -387,7 +362,7 @@ const GorevDagitimPage = () => {
   const handleGoreveAta =
     async () => {
       if (!gorevId) {
-        setError(
+        toast.error(
           "Lütfen görev seçiniz."
         );
         return;
@@ -397,7 +372,7 @@ const GorevDagitimPage = () => {
         secilenPersonelIdleri.length ===
         0
       ) {
-        setError(
+        toast.error(
           "Lütfen en az bir personel seçiniz."
         );
         return;
@@ -405,28 +380,30 @@ const GorevDagitimPage = () => {
 
       try {
         setAtamaYapiliyor(true);
-        setError("");
-        setSuccess("");
+
+        /*
+         * Toast mesajında kullanabilmek için
+         * atama öncesinde sayıyı saklıyoruz.
+         */
+        const atananKisiSayisi =
+          secilenPersonelIdleri.length;
 
         await personelleriGoreveAta(
           Number(gorevId),
           secilenPersonelIdleri
         );
 
-        setSuccess(
-          `${secilenPersonelIdleri.length} personel göreve başarıyla atandı.`
-        );
-
         /*
-         * Atama tamamlandıktan sonra seçimleri temizle.
+         * Atama tamamlandıktan sonra
+         * seçimleri temizliyoruz.
          */
         setSecilenPersonelIdleri(
           []
         );
 
         /*
-         * Görev sayıları değiştiği için dağıtım
-         * sırasını yeniden getiriyoruz.
+         * Görev sayıları değiştiği için
+         * dağıtım sırasını yeniden getiriyoruz.
          */
         const [
           dagitimData,
@@ -452,17 +429,17 @@ const GorevDagitimPage = () => {
               atama.personel.id
           )
         );
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Personeller göreve atanırken bir hata oluştu."
-          );
-        } else {
-          setError(
+
+        toast.success(
+          `${atananKisiSayisi} personel göreve başarıyla atandı.`
+        );
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
             "Personeller göreve atanırken bir hata oluştu."
-          );
-        }
+          )
+        );
       } finally {
         setAtamaYapiliyor(false);
       }
@@ -480,14 +457,8 @@ const GorevDagitimPage = () => {
     setGorevTuruId("");
     setGorevId("");
     setDagitimSirasi([]);
-    setSecilenPersonelIdleri(
-      []
-    );
-    setAtananPersonelIdleri(
-      []
-    );
-    setError("");
-    setSuccess("");
+    setSecilenPersonelIdleri([]);
+    setAtananPersonelIdleri([]);
   };
 
   if (loading) {
@@ -512,20 +483,6 @@ const GorevDagitimPage = () => {
           seçilen göreve atayabilirsiniz.
         </p>
       </div>
-
-      {/* HATA */}
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* BAŞARI */}
-      {success && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-          {success}
-        </div>
-      )}
 
       {/* DAĞITIM KRİTERLERİ */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -561,8 +518,6 @@ const GorevDagitimPage = () => {
                 setAtananPersonelIdleri(
                   []
                 );
-                setError("");
-                setSuccess("");
               }}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-slate-100"
             >
@@ -605,8 +560,6 @@ const GorevDagitimPage = () => {
                 setAtananPersonelIdleri(
                   []
                 );
-                setError("");
-                setSuccess("");
               }}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-slate-100"
             >
@@ -652,8 +605,6 @@ const GorevDagitimPage = () => {
                 setAtananPersonelIdleri(
                   []
                 );
-                setError("");
-                setSuccess("");
               }}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none disabled:bg-slate-100"
             >
@@ -816,9 +767,7 @@ const GorevDagitimPage = () => {
                           <td className="px-6 py-4">
                             <input
                               type="checkbox"
-                              checked={
-                                secili
-                              }
+                              checked={secili}
                               disabled={
                                 zatenAtanmis
                               }
@@ -838,19 +787,13 @@ const GorevDagitimPage = () => {
 
                           {/* SİCİL */}
                           <td className="px-6 py-4 text-sm text-slate-700">
-                            {
-                              personel.sicilNo
-                            }
+                            {personel.sicilNo}
                           </td>
 
                           {/* AD SOYAD */}
                           <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                            {
-                              personel.ad
-                            }{" "}
-                            {
-                              personel.soyad
-                            }
+                            {personel.ad}{" "}
+                            {personel.soyad}
                           </td>
 
                           {/* GÖREV SAYISI */}

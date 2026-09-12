@@ -1,7 +1,9 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import { createBirim } from "../../api/birim";
+import { getErrorMessage } from "../../utils/getErrorMessage";
+
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 
@@ -16,12 +18,16 @@ const BirimFormModal = ({
 }: BirimFormModalProps) => {
   const [ad, setAd] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+
+    setError("");
 
     if (!ad.trim()) {
       setError("Birim adı zorunludur.");
@@ -30,23 +36,25 @@ const BirimFormModal = ({
 
     try {
       setLoading(true);
-      setError("");
 
       await createBirim({
         ad: ad.trim(),
       });
 
-      onSuccess();
+      await onSuccess();
+
+      toast.success(
+        `${ad.trim()} birimi başarıyla eklendi.`
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Birim eklenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Birim eklenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -55,6 +63,7 @@ const BirimFormModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
+        {/* Başlık */}
         <div className="border-b border-slate-200 px-6 py-4">
           <h2 className="text-lg font-semibold text-slate-900">
             Yeni Birim Ekle
@@ -69,19 +78,23 @@ const BirimFormModal = ({
           onSubmit={handleSubmit}
           className="p-6"
         >
-          {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
           <Input
             label="Birim Adı"
             value={ad}
-            onChange={(e) => setAd(e.target.value)}
+            onChange={(e) => {
+              setAd(e.target.value);
+              setError("");
+            }}
             placeholder="Örn. Asayiş Büro"
             disabled={loading}
           />
+
+          {/* Form doğrulama hatası */}
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button

@@ -1,18 +1,27 @@
 import { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+
 import { login } from "../../api/auth";
 import { saveAuth } from "../../utils/authStorage";
-import { useNavigate } from "react-router-dom";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 const LoginPage = () => {
-  const [sicilNo, setSicilNo] = useState("");
-  const [sifre, setSifre] = useState("");
+  const [sicilNo, setSicilNo] =
+    useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [sifre, setSifre] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
   const navigate = useNavigate();
 
   const handleSubmit = async (
@@ -21,27 +30,43 @@ const LoginPage = () => {
     event.preventDefault();
 
     setError("");
-    setLoading(true);
+
+    if (!sicilNo.trim()) {
+      setError(
+        "Sicil numarası girilmelidir."
+      );
+      return;
+    }
+
+    if (!sifre) {
+      setError(
+        "Şifre girilmelidir."
+      );
+      return;
+    }
 
     try {
-      const response = await login({
-  sicilNo,
-  sifre,
-});
+      setLoading(true);
 
-saveAuth(response);
+      const response =
+        await login({
+          sicilNo:
+            sicilNo.trim(),
+          sifre,
+        });
 
-navigate("/", { replace: true });
+      saveAuth(response);
 
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Sicil numarası veya şifre hatalı."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+      navigate("/", {
+        replace: true,
+      });
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Sicil numarası veya şifre hatalı."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -50,7 +75,6 @@ navigate("/", { replace: true });
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md">
-
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-xl font-bold text-white shadow-md">
             EGS
@@ -66,7 +90,6 @@ navigate("/", { replace: true });
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-slate-900">
               Yetkili Personel Girişi
@@ -77,8 +100,10 @@ navigate("/", { replace: true });
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
             <Input
               id="sicilNo"
               name="sicilNo"
@@ -86,11 +111,15 @@ navigate("/", { replace: true });
               type="text"
               placeholder="Sicil numaranızı giriniz"
               value={sicilNo}
-              onChange={(event) =>
-                setSicilNo(event.target.value)
-              }
+              onChange={(event) => {
+                setSicilNo(
+                  event.target.value
+                );
+                setError("");
+              }}
               autoComplete="username"
               required
+              disabled={loading}
             />
 
             <Input
@@ -100,11 +129,15 @@ navigate("/", { replace: true });
               type="password"
               placeholder="Şifrenizi giriniz"
               value={sifre}
-              onChange={(event) =>
-                setSifre(event.target.value)
-              }
+              onChange={(event) => {
+                setSifre(
+                  event.target.value
+                );
+                setError("");
+              }}
               autoComplete="current-password"
               required
+              disabled={loading}
             />
 
             {error && (
@@ -123,14 +156,12 @@ navigate("/", { replace: true });
             >
               Giriş Yap
             </Button>
-
           </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
           Bu sistem yalnızca yetkili personelin kullanımına açıktır.
         </p>
-
       </div>
     </div>
   );

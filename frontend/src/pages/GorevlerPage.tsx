@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   getGorevler,
@@ -18,11 +18,14 @@ import {
 } from "../api/gorevTuru";
 
 import { getAuth } from "../utils/authStorage";
+import { getErrorMessage } from "../utils/getErrorMessage";
 
 import GorevFormModal from "../components/gorev/GorevFormModal";
 import GorevEditModal from "../components/gorev/GorevEditModal";
 import GorevPersonelModal from "../components/gorev/GorevPersonelModal";
+
 import Button from "../components/ui/Button";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 const GorevlerPage = () => {
   const [gorevler, setGorevler] =
@@ -36,9 +39,6 @@ const GorevlerPage = () => {
 
   const [loading, setLoading] =
     useState(true);
-
-  const [error, setError] =
-    useState("");
 
   // Filtreler
   const [tarih, setTarih] =
@@ -69,6 +69,17 @@ const GorevlerPage = () => {
     setPersonelGorev,
   ] = useState<Gorev | null>(null);
 
+  // Pasife alınacak görev
+  const [
+    pasifeAlinacakGorev,
+    setPasifeAlinacakGorev,
+  ] = useState<Gorev | null>(null);
+
+  const [
+    pasifeAlLoading,
+    setPasifeAlLoading,
+  ] = useState(false);
+
   const auth = getAuth();
 
   /*
@@ -78,23 +89,19 @@ const GorevlerPage = () => {
    */
   const loadGorevler = async () => {
     try {
-      setError("");
-
-      const data =
-        await getGorevler();
+      const data = await getGorevler();
 
       setGorevler(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görevler yüklenirken bir hata oluştu."
-        );
-      } else {
-        setError(
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
           "Görevler yüklenirken bir hata oluştu."
-        );
-      }
+        ),
+        {
+          id: "gorevler-yukleme-hatasi",
+        }
+      );
     }
   };
 
@@ -105,7 +112,6 @@ const GorevlerPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError("");
 
         /*
          * Görevler ve görev türleri
@@ -120,23 +126,16 @@ const GorevlerPage = () => {
         ]);
 
         setGorevler(gorevData);
-
-        setGorevTurleri(
-          gorevTuruData
-        );
+        setGorevTurleri(gorevTuruData);
 
         /*
          * ADMIN tüm birimleri backend'den alır.
          */
-        if (
-          auth?.rol === "ADMIN"
-        ) {
+        if (auth?.rol === "ADMIN") {
           const birimData =
             await getBirimler();
 
-          setBirimler(
-            birimData
-          );
+          setBirimler(birimData);
         }
 
         /*
@@ -144,8 +143,7 @@ const GorevlerPage = () => {
          * çekmez. Sadece kendi birimini kullanır.
          */
         if (
-          auth?.rol ===
-            "BIRIM_YETKILISI" &&
+          auth?.rol === "BIRIM_YETKILISI" &&
           auth.birimId &&
           auth.birimAdi
         ) {
@@ -157,22 +155,16 @@ const GorevlerPage = () => {
             },
           ]);
         }
-      } catch (err) {
-        if (
-          axios.isAxiosError(
-            err
-          )
-        ) {
-          setError(
-            err.response?.data
-              ?.message ||
-              "Sayfa verileri yüklenirken bir hata oluştu."
-          );
-        } else {
-          setError(
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
             "Sayfa verileri yüklenirken bir hata oluştu."
-          );
-        }
+          ),
+          {
+            id: "gorevler-ilk-yukleme-hatasi",
+          }
+        );
       } finally {
         setLoading(false);
       }
@@ -185,44 +177,35 @@ const GorevlerPage = () => {
    * Filtreleme
    */
   const filtrelenmisGorevler =
-    gorevler.filter(
-      (gorev) => {
-        const tarihEslesiyor =
-          tarih === "" ||
-          gorev.tarih ===
-            tarih;
+    gorevler.filter((gorev) => {
+      const tarihEslesiyor =
+        tarih === "" ||
+        gorev.tarih === tarih;
 
-        const birimEslesiyor =
-          birimId === "" ||
-          gorev.birim.id ===
-            Number(
-              birimId
-            );
+      const birimEslesiyor =
+        birimId === "" ||
+        gorev.birim.id ===
+          Number(birimId);
 
-        const gorevTuruEslesiyor =
-          gorevTuruId === "" ||
-          gorev.gorevTuru.id ===
-            Number(
-              gorevTuruId
-            );
+      const gorevTuruEslesiyor =
+        gorevTuruId === "" ||
+        gorev.gorevTuru.id ===
+          Number(gorevTuruId);
 
-        const durumEslesiyor =
-          durum === "" ||
-          (durum ===
-            "aktif" &&
-            gorev.aktif) ||
-          (durum ===
-            "pasif" &&
-            !gorev.aktif);
+      const durumEslesiyor =
+        durum === "" ||
+        (durum === "aktif" &&
+          gorev.aktif) ||
+        (durum === "pasif" &&
+          !gorev.aktif);
 
-        return (
-          tarihEslesiyor &&
-          birimEslesiyor &&
-          gorevTuruEslesiyor &&
-          durumEslesiyor
-        );
-      }
-    );
+      return (
+        tarihEslesiyor &&
+        birimEslesiyor &&
+        gorevTuruEslesiyor &&
+        durumEslesiyor
+      );
+    });
 
   const saatiFormatla = (
     saat: string | null
@@ -231,62 +214,50 @@ const GorevlerPage = () => {
       return "-";
     }
 
-    return saat.substring(
-      0,
-      5
-    );
+    return saat.substring(0, 5);
   };
 
-  const filtreleriTemizle =
-    () => {
-      setTarih("");
-      setBirimId("");
-      setGorevTuruId("");
-      setDurum("");
-    };
+  const filtreleriTemizle = () => {
+    setTarih("");
+    setBirimId("");
+    setGorevTuruId("");
+    setDurum("");
+  };
 
   /*
-   * Görevi pasife alma işlemi.
+   * ConfirmModal'da onay verildikten sonra
+   * görev pasife alınır.
    */
-  const handlePasifeAl =
-    async (
-      gorev: Gorev
-    ) => {
-      const onay =
-        window.confirm(
-          `"${gorev.gorevTuru.ad}" görevini pasife almak istediğinize emin misiniz?`
-        );
+  const handlePasifeAl = async () => {
+    if (!pasifeAlinacakGorev) {
+      return;
+    }
 
-      if (!onay) {
-        return;
-      }
+    try {
+      setPasifeAlLoading(true);
 
-      try {
-        setError("");
+      await pasifeAlGorev(
+        pasifeAlinacakGorev.id
+      );
 
-        await pasifeAlGorev(
-          gorev.id
-        );
+      toast.success(
+        `"${pasifeAlinacakGorev.gorevTuru.ad}" görevi pasife alındı.`
+      );
 
-        await loadGorevler();
-      } catch (err) {
-        if (
-          axios.isAxiosError(
-            err
-          )
-        ) {
-          setError(
-            err.response?.data
-              ?.message ||
-              "Görev pasife alınırken bir hata oluştu."
-          );
-        } else {
-          setError(
-            "Görev pasife alınırken bir hata oluştu."
-          );
-        }
-      }
-    };
+      setPasifeAlinacakGorev(null);
+
+      await loadGorevler();
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Görev pasife alınırken bir hata oluştu."
+        )
+      );
+    } finally {
+      setPasifeAlLoading(false);
+    }
+  };
 
   /*
    * Yeni görev oluştururken ve görev düzenlerken
@@ -294,8 +265,7 @@ const GorevlerPage = () => {
    */
   const aktifBirimler =
     birimler.filter(
-      (birim) =>
-        birim.aktif
+      (birim) => birim.aktif
     );
 
   const aktifGorevTurleri =
@@ -322,21 +292,12 @@ const GorevlerPage = () => {
         <Button
           type="button"
           onClick={() =>
-            setShowGorevForm(
-              true
-            )
+            setShowGorevForm(true)
           }
         >
           + Yeni Görev
         </Button>
       </div>
-
-      {/* HATA */}
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* FİLTRELER */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -355,9 +316,7 @@ const GorevlerPage = () => {
               type="date"
               value={tarih}
               onChange={(e) =>
-                setTarih(
-                  e.target.value
-                )
+                setTarih(e.target.value)
               }
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             />
@@ -370,9 +329,7 @@ const GorevlerPage = () => {
             </label>
 
             <select
-              value={
-                birimId
-              }
+              value={birimId}
               onChange={(e) =>
                 setBirimId(
                   e.target.value
@@ -387,16 +344,10 @@ const GorevlerPage = () => {
               {birimler.map(
                 (birim) => (
                   <option
-                    key={
-                      birim.id
-                    }
-                    value={
-                      birim.id
-                    }
+                    key={birim.id}
+                    value={birim.id}
                   >
-                    {
-                      birim.ad
-                    }
+                    {birim.ad}
                   </option>
                 )
               )}
@@ -410,9 +361,7 @@ const GorevlerPage = () => {
             </label>
 
             <select
-              value={
-                gorevTuruId
-              }
+              value={gorevTuruId}
               onChange={(e) =>
                 setGorevTuruId(
                   e.target.value
@@ -425,20 +374,14 @@ const GorevlerPage = () => {
               </option>
 
               {gorevTurleri.map(
-                (
-                  gorevTuru
-                ) => (
+                (gorevTuru) => (
                   <option
-                    key={
-                      gorevTuru.id
-                    }
+                    key={gorevTuru.id}
                     value={
                       gorevTuru.id
                     }
                   >
-                    {
-                      gorevTuru.ad
-                    }
+                    {gorevTuru.ad}
                   </option>
                 )
               )}
@@ -452,13 +395,10 @@ const GorevlerPage = () => {
             </label>
 
             <select
-              value={
-                durum
-              }
+              value={durum}
               onChange={(e) =>
                 setDurum(
-                  e.target
-                    .value as
+                  e.target.value as
                     | ""
                     | "aktif"
                     | "pasif"
@@ -540,22 +480,17 @@ const GorevlerPage = () => {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={
-                      8
-                    }
+                    colSpan={8}
                     className="px-6 py-8 text-center text-sm text-slate-500"
                   >
-                    Görevler
-                    yükleniyor...
+                    Görevler yükleniyor...
                   </td>
                 </tr>
               ) : filtrelenmisGorevler.length ===
                 0 ? (
                 <tr>
                   <td
-                    colSpan={
-                      8
-                    }
+                    colSpan={8}
                     className="px-6 py-8 text-center text-sm text-slate-500"
                   >
                     {tarih ||
@@ -568,19 +503,13 @@ const GorevlerPage = () => {
                 </tr>
               ) : (
                 filtrelenmisGorevler.map(
-                  (
-                    gorev
-                  ) => (
+                  (gorev) => (
                     <tr
-                      key={
-                        gorev.id
-                      }
+                      key={gorev.id}
                       className="transition hover:bg-slate-50"
                     >
                       <td className="px-6 py-4 text-sm text-slate-700">
-                        {
-                          gorev.tarih
-                        }
+                        {gorev.tarih}
                       </td>
 
                       <td className="px-6 py-4 text-sm text-slate-700">
@@ -596,11 +525,7 @@ const GorevlerPage = () => {
                       </td>
 
                       <td className="px-6 py-4 text-sm text-slate-700">
-                        {
-                          gorev
-                            .birim
-                            .ad
-                        }
+                        {gorev.birim.ad}
                       </td>
 
                       <td className="px-6 py-4 text-sm font-medium text-slate-900">
@@ -661,7 +586,7 @@ const GorevlerPage = () => {
                               type="button"
                               variant="danger"
                               onClick={() =>
-                                void handlePasifeAl(
+                                setPasifeAlinacakGorev(
                                   gorev
                                 )
                               }
@@ -671,8 +596,7 @@ const GorevlerPage = () => {
                           </div>
                         ) : (
                           <span className="text-sm text-slate-400">
-                            İşlem
-                            yok
+                            İşlem yok
                           </span>
                         )}
                       </td>
@@ -688,16 +612,12 @@ const GorevlerPage = () => {
       {/* YENİ GÖREV MODALI */}
       {showGorevForm && (
         <GorevFormModal
-          birimler={
-            aktifBirimler
-          }
+          birimler={aktifBirimler}
           gorevTurleri={
             aktifGorevTurleri
           }
           onClose={() =>
-            setShowGorevForm(
-              false
-            )
+            setShowGorevForm(false)
           }
           onSuccess={
             loadGorevler
@@ -736,6 +656,27 @@ const GorevlerPage = () => {
           }
           onClose={() =>
             setPersonelGorev(
+              null
+            )
+          }
+        />
+      )}
+
+      {/* GÖREV PASİFE ALMA ONAY MODALI */}
+      {pasifeAlinacakGorev && (
+        <ConfirmModal
+          title="Görevi Pasife Al"
+          message={`"${pasifeAlinacakGorev.gorevTuru.ad}" görevini pasife almak istediğinize emin misiniz?`}
+          confirmText="Pasife Al"
+          cancelText="İptal"
+          loading={
+            pasifeAlLoading
+          }
+          onConfirm={
+            handlePasifeAl
+          }
+          onCancel={() =>
+            setPasifeAlinacakGorev(
               null
             )
           }

@@ -1,15 +1,19 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import { updatePersonel } from "../../api/personel";
+
 import type {
   Cinsiyet,
   KanGrubu,
   Personel,
   PersonelRequest,
 } from "../../types/personel";
+
 import type { Birim } from "../../api/birim";
+
 import { getAuth } from "../../utils/authStorage";
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 import Input from "../ui/Input";
@@ -46,12 +50,15 @@ const PersonelEditModal = ({
   );
 
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+
     setError("");
 
     if (
@@ -105,17 +112,20 @@ const PersonelEditModal = ({
         Number(birimId)
       );
 
-      onSuccess();
+      await onSuccess();
+
+      toast.success(
+        `${ad.trim()} ${soyad.trim()} personeli güncellendi.`
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Personel güncellenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Personel güncellenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -138,7 +148,8 @@ const PersonelEditModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100"
+            disabled={loading}
+            className="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ✕
           </button>
@@ -149,29 +160,42 @@ const PersonelEditModal = ({
             <Input
               label="Ad"
               value={ad}
-              onChange={(e) => setAd(e.target.value)}
+              onChange={(e) => {
+                setAd(e.target.value);
+                setError("");
+              }}
               placeholder="Ad"
             />
 
             <Input
               label="Soyad"
               value={soyad}
-              onChange={(e) => setSoyad(e.target.value)}
+              onChange={(e) => {
+                setSoyad(e.target.value);
+                setError("");
+              }}
               placeholder="Soyad"
             />
 
             <Input
               label="Sicil No"
               value={sicilNo}
-              onChange={(e) => setSicilNo(e.target.value)}
+              onChange={(e) => {
+                setSicilNo(e.target.value);
+                setError("");
+              }}
               placeholder="Sicil No"
             />
 
             <Input
               label="Telefon"
               value={telefon}
-              onChange={(e) => setTelefon(e.target.value)}
+              onChange={(e) => {
+                setTelefon(e.target.value);
+                setError("");
+              }}
               placeholder="05XXXXXXXXX"
+              maxLength={11}
             />
 
             <div>
@@ -181,13 +205,20 @@ const PersonelEditModal = ({
 
               <select
                 value={cinsiyet}
-                onChange={(e) =>
-                  setCinsiyet(e.target.value as Cinsiyet)
-                }
+                onChange={(e) => {
+                  setCinsiyet(
+                    e.target.value as Cinsiyet
+                  );
+                  setError("");
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
               >
-                <option value="ERKEK">Erkek</option>
-                <option value="KADIN">Kadın</option>
+                <option value="ERKEK">
+                  Erkek
+                </option>
+                <option value="KADIN">
+                  Kadın
+                </option>
               </select>
             </div>
 
@@ -198,19 +229,38 @@ const PersonelEditModal = ({
 
               <select
                 value={kanGrubu}
-                onChange={(e) =>
-                  setKanGrubu(e.target.value as KanGrubu)
-                }
+                onChange={(e) => {
+                  setKanGrubu(
+                    e.target.value as KanGrubu
+                  );
+                  setError("");
+                }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
               >
-                <option value="A_POZITIF">A+</option>
-                <option value="A_NEGATIF">A-</option>
-                <option value="B_POZITIF">B+</option>
-                <option value="B_NEGATIF">B-</option>
-                <option value="AB_POZITIF">AB+</option>
-                <option value="AB_NEGATIF">AB-</option>
-                <option value="SIFIR_POZITIF">0+</option>
-                <option value="SIFIR_NEGATIF">0-</option>
+                <option value="A_POZITIF">
+                  A+
+                </option>
+                <option value="A_NEGATIF">
+                  A-
+                </option>
+                <option value="B_POZITIF">
+                  B+
+                </option>
+                <option value="B_NEGATIF">
+                  B-
+                </option>
+                <option value="AB_POZITIF">
+                  AB+
+                </option>
+                <option value="AB_NEGATIF">
+                  AB-
+                </option>
+                <option value="SIFIR_POZITIF">
+                  0+
+                </option>
+                <option value="SIFIR_NEGATIF">
+                  0-
+                </option>
               </select>
             </div>
 
@@ -222,19 +272,24 @@ const PersonelEditModal = ({
 
                 <select
                   value={birimId}
-                  onChange={(e) =>
-                    setBirimId(e.target.value)
-                  }
+                  onChange={(e) => {
+                    setBirimId(
+                      e.target.value
+                    );
+                    setError("");
+                  }}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
                 >
-                  {birimler.map((birim) => (
-                    <option
-                      key={birim.id}
-                      value={birim.id}
-                    >
-                      {birim.ad}
-                    </option>
-                  ))}
+                  {birimler.map(
+                    (birim) => (
+                      <option
+                        key={birim.id}
+                        value={birim.id}
+                      >
+                        {birim.ad}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
             ) : (
@@ -244,7 +299,8 @@ const PersonelEditModal = ({
                 </label>
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-                  {auth?.birimAdi || personel.birim.ad}
+                  {auth?.birimAdi ||
+                    personel.birim.ad}
                 </div>
               </div>
             )}
@@ -253,9 +309,20 @@ const PersonelEditModal = ({
               <Input
                 label="IBAN"
                 value={iban}
-                onChange={(e) => setIban(e.target.value)}
+                onChange={(e) => {
+                  setIban(
+                    e.target.value.toUpperCase()
+                  );
+                  setError("");
+                }}
                 placeholder="TR..."
+                maxLength={31}
               />
+
+              <p className="mt-1.5 text-xs text-slate-500">
+                Boşluk kullanabilirsiniz. Kaydedilirken boşluklar
+                otomatik kaldırılır.
+              </p>
             </div>
           </div>
 

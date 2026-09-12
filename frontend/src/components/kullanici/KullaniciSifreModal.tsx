@@ -1,8 +1,12 @@
 import { useState, type FormEvent } from "react";
+import toast from "react-hot-toast";
+
 import {
   sifreGuncelle,
   type Kullanici,
 } from "../../api/kullanici";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 interface KullaniciSifreModalProps {
   kullanici: Kullanici;
@@ -16,8 +20,9 @@ export default function KullaniciSifreModal({
   const [yeniSifre, setYeniSifre] = useState("");
   const [sifreTekrar, setSifreTekrar] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
@@ -25,7 +30,6 @@ export default function KullaniciSifreModal({
     event.preventDefault();
 
     setError("");
-    setSuccess("");
 
     if (yeniSifre.length < 8) {
       setError("Şifre en az 8 karakter olmalıdır.");
@@ -42,11 +46,21 @@ export default function KullaniciSifreModal({
 
       await sifreGuncelle(kullanici.id, yeniSifre);
 
-      setSuccess("Kullanıcının şifresi başarıyla güncellendi.");
+      toast.success(
+        `${kullanici.sicilNo} kullanıcısının şifresi güncellendi.`
+      );
+
       setYeniSifre("");
       setSifreTekrar("");
-    } catch {
-      setError("Şifre güncellenirken bir hata oluştu.");
+
+      onClose();
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Şifre güncellenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -70,7 +84,8 @@ export default function KullaniciSifreModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            disabled={loading}
+            className="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ✕
           </button>
@@ -83,12 +98,6 @@ export default function KullaniciSifreModal({
           {error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
               {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
-              {success}
             </div>
           )}
 
@@ -113,7 +122,10 @@ export default function KullaniciSifreModal({
             <input
               type="password"
               value={yeniSifre}
-              onChange={(e) => setYeniSifre(e.target.value)}
+              onChange={(e) => {
+                setYeniSifre(e.target.value);
+                setError("");
+              }}
               required
               minLength={8}
               autoComplete="new-password"
@@ -130,7 +142,10 @@ export default function KullaniciSifreModal({
             <input
               type="password"
               value={sifreTekrar}
-              onChange={(e) => setSifreTekrar(e.target.value)}
+              onChange={(e) => {
+                setSifreTekrar(e.target.value);
+                setError("");
+              }}
               required
               minLength={8}
               autoComplete="new-password"
@@ -144,7 +159,7 @@ export default function KullaniciSifreModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Kapat
             </button>
@@ -154,7 +169,9 @@ export default function KullaniciSifreModal({
               disabled={loading}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+              {loading
+                ? "Güncelleniyor..."
+                : "Şifreyi Güncelle"}
             </button>
           </div>
         </form>

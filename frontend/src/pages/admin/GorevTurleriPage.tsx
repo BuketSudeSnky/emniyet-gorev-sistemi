@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   getGorevTurleri,
@@ -9,39 +9,47 @@ import {
 
 import GorevTuruFormModal from "../../components/gorevTuru/GorevTuruFormModal";
 import GorevTuruEditModal from "../../components/gorevTuru/GorevTuruEditModal";
+
 import Button from "../../components/ui/Button";
+import ConfirmModal from "../../components/ui/ConfirmModal";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 const GorevTurleriPage = () => {
   const [gorevTurleri, setGorevTurleri] = useState<GorevTuru[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [arama, setArama] = useState("");
-  const [durum, setDurum] = useState<"" | "aktif" | "pasif">("");
+  const [durum, setDurum] =
+    useState<"" | "aktif" | "pasif">("");
 
-  const [showGorevTuruForm, setShowGorevTuruForm] = useState(false);
+  const [showGorevTuruForm, setShowGorevTuruForm] =
+    useState(false);
 
   const [editingGorevTuru, setEditingGorevTuru] =
     useState<GorevTuru | null>(null);
 
-  const [pasifeAlLoadingId, setPasifeAlLoadingId] =
-    useState<number | null>(null);
+  const [pasifeAlinacakGorevTuru, setPasifeAlinacakGorevTuru] =
+    useState<GorevTuru | null>(null);
+
+  const [pasifeAlLoading, setPasifeAlLoading] =
+    useState(false);
 
   const loadGorevTurleri = async () => {
     try {
-      setError("");
-
       const data = await getGorevTurleri();
+
       setGorevTurleri(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görev türleri yüklenirken bir hata oluştu."
-        );
-      } else {
-        setError("Görev türleri yüklenirken bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Görev türleri yüklenirken bir hata oluştu."
+        ),
+        {
+          id: "gorev-turleri-yukleme-hatasi",
+        }
+      );
     }
   };
 
@@ -49,19 +57,20 @@ const GorevTurleriPage = () => {
     const fetchGorevTurleri = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const data = await getGorevTurleri();
+
         setGorevTurleri(data);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Görev türleri yüklenirken bir hata oluştu."
-          );
-        } else {
-          setError("Görev türleri yüklenirken bir hata oluştu.");
-        }
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
+            "Görev türleri yüklenirken bir hata oluştu."
+          ),
+          {
+            id: "gorev-turleri-ilk-yukleme-hatasi",
+          }
+        );
       } finally {
         setLoading(false);
       }
@@ -70,35 +79,34 @@ const GorevTurleriPage = () => {
     void fetchGorevTurleri();
   }, []);
 
-  const handlePasifeAl = async (gorevTuru: GorevTuru) => {
-    const onay = window.confirm(
-      `"${gorevTuru.ad}" görev türünü pasife almak istediğinize emin misiniz?`
-    );
-
-    if (!onay) {
+  const handlePasifeAl = async () => {
+    if (!pasifeAlinacakGorevTuru) {
       return;
     }
 
     try {
-      setPasifeAlLoadingId(gorevTuru.id);
-      setError("");
+      setPasifeAlLoading(true);
 
-      await pasifeAlGorevTuru(gorevTuru.id);
+      await pasifeAlGorevTuru(
+        pasifeAlinacakGorevTuru.id
+      );
+
+      toast.success(
+        `${pasifeAlinacakGorevTuru.ad} görev türü pasife alındı.`
+      );
+
+      setPasifeAlinacakGorevTuru(null);
 
       await loadGorevTurleri();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Görev türü pasife alınırken bir hata oluştu."
-        );
-      } else {
-        setError(
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
           "Görev türü pasife alınırken bir hata oluştu."
-        );
-      }
+        )
+      );
     } finally {
-      setPasifeAlLoadingId(null);
+      setPasifeAlLoading(false);
     }
   };
 
@@ -107,7 +115,9 @@ const GorevTurleriPage = () => {
       const adEslesiyor = gorevTuru.ad
         .toLocaleLowerCase("tr-TR")
         .includes(
-          arama.trim().toLocaleLowerCase("tr-TR")
+          arama
+            .trim()
+            .toLocaleLowerCase("tr-TR")
         );
 
       const durumEslesiyor =
@@ -121,6 +131,7 @@ const GorevTurleriPage = () => {
 
   return (
     <div className="space-y-6">
+      {/* Sayfa başlığı */}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -128,25 +139,21 @@ const GorevTurleriPage = () => {
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
-            Sistemde tanımlı görev türlerini
-            görüntüleyebilirsiniz.
+            Sistemde tanımlı görev türlerini görüntüleyebilirsiniz.
           </p>
         </div>
 
         <Button
           type="button"
-          onClick={() => setShowGorevTuruForm(true)}
+          onClick={() =>
+            setShowGorevTuruForm(true)
+          }
         >
           + Yeni Görev Türü
         </Button>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
+      {/* Filtreler */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold text-slate-900">
           Görev Türü Filtreleri
@@ -161,7 +168,9 @@ const GorevTurleriPage = () => {
             <input
               type="text"
               value={arama}
-              onChange={(e) => setArama(e.target.value)}
+              onChange={(e) =>
+                setArama(e.target.value)
+              }
               placeholder="Görev türü ara..."
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             />
@@ -184,9 +193,17 @@ const GorevTurleriPage = () => {
               }
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
             >
-              <option value="">Tümü</option>
-              <option value="aktif">Aktif</option>
-              <option value="pasif">Pasif</option>
+              <option value="">
+                Tümü
+              </option>
+
+              <option value="aktif">
+                Aktif
+              </option>
+
+              <option value="pasif">
+                Pasif
+              </option>
             </select>
           </div>
 
@@ -206,6 +223,7 @@ const GorevTurleriPage = () => {
         </div>
       </div>
 
+      {/* Görev türleri tablosu */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
@@ -239,8 +257,7 @@ const GorevTurleriPage = () => {
                     Görev türleri yükleniyor...
                   </td>
                 </tr>
-              ) : filtrelenmisGorevTurleri.length ===
-                0 ? (
+              ) : filtrelenmisGorevTurleri.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -298,12 +315,8 @@ const GorevTurleriPage = () => {
                             <Button
                               type="button"
                               variant="danger"
-                              loading={
-                                pasifeAlLoadingId ===
-                                gorevTuru.id
-                              }
                               onClick={() =>
-                                void handlePasifeAl(
+                                setPasifeAlinacakGorevTuru(
                                   gorevTuru
                                 )
                               }
@@ -322,6 +335,7 @@ const GorevTurleriPage = () => {
         </div>
       </div>
 
+      {/* Yeni görev türü modalı */}
       {showGorevTuruForm && (
         <GorevTuruFormModal
           onClose={() =>
@@ -331,6 +345,7 @@ const GorevTurleriPage = () => {
         />
       )}
 
+      {/* Görev türü düzenleme modalı */}
       {editingGorevTuru && (
         <GorevTuruEditModal
           gorevTuru={editingGorevTuru}
@@ -338,6 +353,21 @@ const GorevTurleriPage = () => {
             setEditingGorevTuru(null)
           }
           onSuccess={loadGorevTurleri}
+        />
+      )}
+
+      {/* Görev türü pasife alma onay modalı */}
+      {pasifeAlinacakGorevTuru && (
+        <ConfirmModal
+          title="Görev Türünü Pasife Al"
+          message={`"${pasifeAlinacakGorevTuru.ad}" görev türünü pasife almak istediğinize emin misiniz?`}
+          confirmText="Pasife Al"
+          cancelText="İptal"
+          loading={pasifeAlLoading}
+          onConfirm={handlePasifeAl}
+          onCancel={() =>
+            setPasifeAlinacakGorevTuru(null)
+          }
         />
       )}
     </div>

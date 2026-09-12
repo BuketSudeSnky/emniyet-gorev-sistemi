@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   getBirimler,
@@ -11,19 +11,25 @@ import BirimFormModal from "../../components/birim/BirimFormModal";
 import BirimEditModal from "../../components/birim/BirimEditModal";
 
 import Button from "../../components/ui/Button";
+import ConfirmModal from "../../components/ui/ConfirmModal";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 const BirimlerPage = () => {
   const [birimler, setBirimler] = useState<Birim[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const [showBirimForm, setShowBirimForm] = useState(false);
+  const [showBirimForm, setShowBirimForm] =
+    useState(false);
 
   const [editingBirim, setEditingBirim] =
     useState<Birim | null>(null);
 
-  const [pasifeAlLoadingId, setPasifeAlLoadingId] =
-    useState<number | null>(null);
+  const [pasifeAlinacakBirim, setPasifeAlinacakBirim] =
+    useState<Birim | null>(null);
+
+  const [pasifeAlLoading, setPasifeAlLoading] =
+    useState(false);
 
   const [arama, setArama] = useState("");
 
@@ -33,19 +39,20 @@ const BirimlerPage = () => {
   const loadBirimler = async () => {
     try {
       setLoading(true);
-      setError("");
 
       const data = await getBirimler();
+
       setBirimler(data);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Birimler alınırken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Birimler alınırken bir hata oluştu."
+        ),
+        {
+          id: "birimler-yukleme-hatasi",
+        }
+      );
     } finally {
       setLoading(false);
     }
@@ -55,19 +62,20 @@ const BirimlerPage = () => {
     const fetchBirimler = async () => {
       try {
         setLoading(true);
-        setError("");
 
         const data = await getBirimler();
+
         setBirimler(data);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(
-            err.response?.data?.message ||
-              "Birimler alınırken bir hata oluştu."
-          );
-        } else {
-          setError("Beklenmeyen bir hata oluştu.");
-        }
+      } catch (error) {
+        toast.error(
+          getErrorMessage(
+            error,
+            "Birimler alınırken bir hata oluştu."
+          ),
+          {
+            id: "birimler-ilk-yukleme-hatasi",
+          }
+        );
       } finally {
         setLoading(false);
       }
@@ -76,33 +84,34 @@ const BirimlerPage = () => {
     void fetchBirimler();
   }, []);
 
-  const handlePasifeAl = async (birim: Birim) => {
-    const onay = window.confirm(
-      `${birim.ad} birimini pasife almak istediğinize emin misiniz?`
-    );
-
-    if (!onay) {
+  const handlePasifeAl = async () => {
+    if (!pasifeAlinacakBirim) {
       return;
     }
 
     try {
-      setError("");
-      setPasifeAlLoadingId(birim.id);
+      setPasifeAlLoading(true);
 
-      await pasifeAlBirim(birim.id);
+      await pasifeAlBirim(
+        pasifeAlinacakBirim.id
+      );
+
+      toast.success(
+        `${pasifeAlinacakBirim.ad} birimi pasife alındı.`
+      );
+
+      setPasifeAlinacakBirim(null);
 
       await loadBirimler();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Birim pasife alınırken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Birim pasife alınırken bir hata oluştu."
+        )
+      );
     } finally {
-      setPasifeAlLoadingId(null);
+      setPasifeAlLoading(false);
     }
   };
 
@@ -111,22 +120,26 @@ const BirimlerPage = () => {
     setDurum("");
   };
 
-  const filtrelenmisBirimler = birimler.filter((birim) => {
-    const adEslesiyor = birim.ad
-      .toLocaleLowerCase("tr-TR")
-      .includes(
-        arama
-          .trim()
-          .toLocaleLowerCase("tr-TR")
-      );
+  const filtrelenmisBirimler = birimler.filter(
+    (birim) => {
+      const adEslesiyor = birim.ad
+        .toLocaleLowerCase("tr-TR")
+        .includes(
+          arama
+            .trim()
+            .toLocaleLowerCase("tr-TR")
+        );
 
-    const durumEslesiyor =
-      durum === "" ||
-      (durum === "aktif" && birim.aktif) ||
-      (durum === "pasif" && !birim.aktif);
+      const durumEslesiyor =
+        durum === "" ||
+        (durum === "aktif" &&
+          birim.aktif) ||
+        (durum === "pasif" &&
+          !birim.aktif);
 
-    return adEslesiyor && durumEslesiyor;
-  });
+      return adEslesiyor && durumEslesiyor;
+    }
+  );
 
   return (
     <div className="p-6">
@@ -144,7 +157,9 @@ const BirimlerPage = () => {
         </div>
 
         <Button
-          onClick={() => setShowBirimForm(true)}
+          onClick={() =>
+            setShowBirimForm(true)
+          }
         >
           + Yeni Birim Ekle
         </Button>
@@ -199,9 +214,17 @@ const BirimlerPage = () => {
               }
               className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-700 focus:ring-2 focus:ring-slate-100"
             >
-              <option value="">Tümü</option>
-              <option value="aktif">Aktif</option>
-              <option value="pasif">Pasif</option>
+              <option value="">
+                Tümü
+              </option>
+
+              <option value="aktif">
+                Aktif
+              </option>
+
+              <option value="pasif">
+                Pasif
+              </option>
             </select>
           </div>
         </div>
@@ -209,19 +232,14 @@ const BirimlerPage = () => {
         <div className="mt-5 flex justify-end">
           <Button
             variant="secondary"
-            onClick={handleFiltreleriTemizle}
+            onClick={
+              handleFiltreleriTemizle
+            }
           >
             Temizle
           </Button>
         </div>
       </div>
-
-      {/* Hata mesajı */}
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* Birimler tablosu */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -229,7 +247,8 @@ const BirimlerPage = () => {
           <div className="p-6 text-sm text-slate-500">
             Birimler yükleniyor...
           </div>
-        ) : filtrelenmisBirimler.length === 0 ? (
+        ) : filtrelenmisBirimler.length ===
+          0 ? (
           <div className="p-6 text-sm text-slate-500">
             {arama || durum
               ? "Arama kriterlerine uygun birim bulunamadı."
@@ -292,7 +311,9 @@ const BirimlerPage = () => {
                           <button
                             type="button"
                             onClick={() =>
-                              setEditingBirim(birim)
+                              setEditingBirim(
+                                birim
+                              )
                             }
                             className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
                           >
@@ -303,20 +324,13 @@ const BirimlerPage = () => {
                             <button
                               type="button"
                               onClick={() =>
-                                handlePasifeAl(
+                                setPasifeAlinacakBirim(
                                   birim
                                 )
                               }
-                              disabled={
-                                pasifeAlLoadingId ===
-                                birim.id
-                              }
-                              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
                             >
-                              {pasifeAlLoadingId ===
-                              birim.id
-                                ? "İşleniyor..."
-                                : "Pasife Al"}
+                              Pasife Al
                             </button>
                           )}
                         </div>
@@ -348,6 +362,21 @@ const BirimlerPage = () => {
             setEditingBirim(null)
           }
           onSuccess={loadBirimler}
+        />
+      )}
+
+      {/* Birim pasife alma onay modalı */}
+      {pasifeAlinacakBirim && (
+        <ConfirmModal
+          title="Birimi Pasife Al"
+          message={`${pasifeAlinacakBirim.ad} birimini pasife almak istediğinize emin misiniz?`}
+          confirmText="Pasife Al"
+          cancelText="İptal"
+          loading={pasifeAlLoading}
+          onConfirm={handlePasifeAl}
+          onCancel={() =>
+            setPasifeAlinacakBirim(null)
+          }
         />
       )}
     </div>

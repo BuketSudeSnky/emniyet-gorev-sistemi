@@ -1,10 +1,12 @@
 import { useState } from "react";
-import axios from "axios";
+import toast from "react-hot-toast";
 
 import {
   updateBirim,
   type Birim,
 } from "../../api/birim";
+
+import { getErrorMessage } from "../../utils/getErrorMessage";
 
 import Button from "../ui/Button";
 import Input from "../ui/Input";
@@ -22,12 +24,16 @@ const BirimEditModal = ({
 }: BirimEditModalProps) => {
   const [ad, setAd] = useState(birim.ad);
   const [loading, setLoading] = useState(false);
+
+  // Sadece form doğrulama hataları için
   const [error, setError] = useState("");
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+
+    setError("");
 
     if (!ad.trim()) {
       setError("Birim adı zorunludur.");
@@ -36,23 +42,25 @@ const BirimEditModal = ({
 
     try {
       setLoading(true);
-      setError("");
 
       await updateBirim(birim.id, {
         ad: ad.trim(),
       });
 
       await onSuccess();
+
+      toast.success(
+        `${ad.trim()} birimi başarıyla güncellendi.`
+      );
+
       onClose();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message ||
-            "Birim güncellenirken bir hata oluştu."
-        );
-      } else {
-        setError("Beklenmeyen bir hata oluştu.");
-      }
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Birim güncellenirken bir hata oluştu."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -75,18 +83,21 @@ const BirimEditModal = ({
           onSubmit={handleSubmit}
           className="p-6"
         >
-          {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
           <Input
             label="Birim Adı"
             value={ad}
-            onChange={(e) => setAd(e.target.value)}
+            onChange={(e) => {
+              setAd(e.target.value);
+              setError("");
+            }}
             disabled={loading}
           />
+
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end gap-3">
             <Button
