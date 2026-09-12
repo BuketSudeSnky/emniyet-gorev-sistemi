@@ -6,6 +6,7 @@ import com.emniyet.backend.security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -44,7 +45,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
@@ -67,14 +69,18 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
 
         return source;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
 
         http
                 .cors(cors -> {})
@@ -101,20 +107,49 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // LOGIN - herkes erişebilir
-                        .requestMatchers("/api/auth/login")
+                        .requestMatchers(
+                                "/api/auth/login"
+                        )
                         .permitAll()
 
                         // Spring hata endpointi
-                        .requestMatchers("/error")
+                        .requestMatchers(
+                                "/error"
+                        )
                         .permitAll()
 
-                        // SADECE ADMIN
+
+                        /*
+                         * GÖREV TÜRLERİ
+                         *
+                         * ADMIN ve BIRIM_YETKILISI
+                         * görev türlerini okuyabilir.
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/gorev-turleri",
+                                "/api/gorev-turleri/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "BIRIM_YETKILISI"
+                        )
+
+
+                        /*
+                         * SADECE ADMIN
+                         */
+
                         .requestMatchers(
                                 "/api/birimler",
                                 "/api/birimler/**"
                         )
                         .hasRole("ADMIN")
 
+                        /*
+                         * GET yukarıda karşılandığı için
+                         * buraya POST / PUT / DELETE düşer.
+                         */
                         .requestMatchers(
                                 "/api/gorev-turleri",
                                 "/api/gorev-turleri/**"
@@ -127,7 +162,11 @@ public class SecurityConfig {
                         )
                         .hasRole("ADMIN")
 
-                        // ADMIN + BIRIM_YETKILISI
+
+                        /*
+                         * ADMIN + BIRIM_YETKILISI
+                         */
+
                         .requestMatchers(
                                 "/api/personeller",
                                 "/api/personeller/**"

@@ -45,7 +45,8 @@ public class GorevPersonelController {
             @RequestBody List<Long> personelIdleri,
             Authentication authentication) {
 
-        Kullanici kullanici = aktifKullanici(authentication);
+        Kullanici kullanici =
+                aktifKullanici(authentication);
 
         Gorev gorev =
                 gorevService.idIleGorevGetir(gorevId);
@@ -62,12 +63,55 @@ public class GorevPersonelController {
                 );
     }
 
+    /*
+     * Personeli görevden çıkarır.
+     *
+     * Burada personel veya görev silinmez.
+     * Sadece GorevPersonel tablosundaki
+     * ilişki kaydı silinir.
+     */
+    @DeleteMapping("/gorev/{gorevId}/personel/{personelId}")
+    public void personeliGorevdenCikar(
+            @PathVariable Long gorevId,
+            @PathVariable Long personelId,
+            Authentication authentication) {
+
+        Kullanici kullanici =
+                aktifKullanici(authentication);
+
+        /*
+         * Önce görevi buluyoruz.
+         */
+        Gorev gorev =
+                gorevService.idIleGorevGetir(gorevId);
+
+        /*
+         * ADMIN tüm birimlerde işlem yapabilir.
+         * BIRIM_YETKILISI ise yalnızca
+         * kendi birimindeki görevlerde işlem yapabilir.
+         */
+        birimYetkisiniKontrolEt(
+                kullanici,
+                gorev.getBirim().getId()
+        );
+
+        /*
+         * Sadece görev-personel ataması silinir.
+         */
+        gorevPersonelService
+                .personeliGorevdenCikar(
+                        gorevId,
+                        personelId
+                );
+    }
+
     @GetMapping("/gorev/{gorevId}")
     public List<GorevPersonel> goreveAtananPersonelleriGetir(
             @PathVariable Long gorevId,
             Authentication authentication) {
 
-        Kullanici kullanici = aktifKullanici(authentication);
+        Kullanici kullanici =
+                aktifKullanici(authentication);
 
         Gorev gorev =
                 gorevService.idIleGorevGetir(gorevId);
@@ -78,7 +122,9 @@ public class GorevPersonelController {
         );
 
         return gorevPersonelService
-                .goreveAtananPersonelleriGetir(gorevId);
+                .goreveAtananPersonelleriGetir(
+                        gorevId
+                );
     }
 
     @GetMapping("/personel/{personelId}")
@@ -86,10 +132,14 @@ public class GorevPersonelController {
             @PathVariable Long personelId,
             Authentication authentication) {
 
-        Kullanici kullanici = aktifKullanici(authentication);
+        Kullanici kullanici =
+                aktifKullanici(authentication);
 
         Personel personel =
-                personelService.idIlePersonelGetir(personelId);
+                personelService
+                        .idIlePersonelGetir(
+                                personelId
+                        );
 
         birimYetkisiniKontrolEt(
                 kullanici,
@@ -97,7 +147,9 @@ public class GorevPersonelController {
         );
 
         return gorevPersonelService
-                .personelinGorevGecmisiniGetir(personelId);
+                .personelinGorevGecmisiniGetir(
+                        personelId
+                );
     }
 
     @GetMapping("/dagitim-sirasi")
@@ -106,10 +158,15 @@ public class GorevPersonelController {
             @RequestParam Long gorevTuruId,
             Authentication authentication) {
 
-        Kullanici kullanici = aktifKullanici(authentication);
+        Kullanici kullanici =
+                aktifKullanici(authentication);
 
         Long kullanilacakBirimId;
 
+        /*
+         * ADMIN hangi birim için dağıtım
+         * yapılacağını request üzerinden belirtir.
+         */
         if (kullanici.getRol() == Rol.ADMIN) {
 
             if (birimId == null) {
@@ -123,8 +180,14 @@ public class GorevPersonelController {
 
         } else {
 
+            /*
+             * Birim yetkilisinin birimi
+             * giriş yapan kullanıcıdan alınır.
+             */
             kullanilacakBirimId =
-                    kullanici.getBirim().getId();
+                    kullanici
+                            .getBirim()
+                            .getId();
         }
 
         return gorevPersonelService
@@ -134,6 +197,10 @@ public class GorevPersonelController {
                 );
     }
 
+    /*
+     * Authentication içindeki sicil numarasından
+     * aktif kullanıcıyı getirir.
+     */
     private Kullanici aktifKullanici(
             Authentication authentication) {
 
@@ -143,6 +210,12 @@ public class GorevPersonelController {
                 );
     }
 
+    /*
+     * ADMIN bütün birimlerde işlem yapabilir.
+     *
+     * BIRIM_YETKILISI sadece bağlı olduğu
+     * birim üzerinde işlem yapabilir.
+     */
     private void birimYetkisiniKontrolEt(
             Kullanici kullanici,
             Long birimId) {
@@ -151,10 +224,13 @@ public class GorevPersonelController {
             return;
         }
 
-        if (kullanici.getBirim() == null ||
-                !kullanici.getBirim()
-                        .getId()
-                        .equals(birimId)) {
+        if (
+                kullanici.getBirim() == null ||
+                        !kullanici
+                                .getBirim()
+                                .getId()
+                                .equals(birimId)
+        ) {
 
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,

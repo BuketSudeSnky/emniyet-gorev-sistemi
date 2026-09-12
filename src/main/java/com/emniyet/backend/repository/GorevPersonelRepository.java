@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface GorevPersonelRepository
         extends JpaRepository<GorevPersonel, Long> {
@@ -14,7 +15,15 @@ public interface GorevPersonelRepository
 
     List<GorevPersonel> findByPersonelId(Long personelId);
 
-    boolean existsByGorevIdAndPersonelId(Long gorevId, Long personelId);
+    boolean existsByGorevIdAndPersonelId(
+            Long gorevId,
+            Long personelId
+    );
+
+    Optional<GorevPersonel> findByGorevIdAndPersonelId(
+            Long gorevId,
+            Long personelId
+    );
 
     @Query("""
        SELECT COUNT(gp)

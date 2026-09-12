@@ -159,6 +159,26 @@ public class GorevPersonelService {
                 .findByGorevId(gorevId);
     }
 
+    @Transactional
+    public void personeliGorevdenCikar(
+            Long gorevId,
+            Long personelId) {
+
+        GorevPersonel atama =
+                gorevPersonelRepository
+                        .findByGorevIdAndPersonelId(
+                                gorevId,
+                                personelId
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Görev-personel ataması bulunamadı"
+                                )
+                        );
+
+        gorevPersonelRepository.delete(atama);
+    }
+
     public List<GorevPersonel> personelinGorevGecmisiniGetir(
             Long personelId) {
 

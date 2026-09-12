@@ -33,7 +33,7 @@ public class GorevService {
     }
 
     public List<Gorev> tumGorevleriGetir() {
-        return gorevRepository.findByAktifTrue();
+        return gorevRepository.findAll();
     }
 
     public Gorev gorevEkle(
@@ -153,7 +153,7 @@ public class GorevService {
             Long birimId) {
 
         return gorevRepository
-                .findByBirimIdAndAktifTrue(birimId);
+                .findByBirimId(birimId);
     }
 
     public List<Gorev> tariheGoreGorevleriGetir(

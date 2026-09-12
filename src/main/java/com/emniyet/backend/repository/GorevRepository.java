@@ -11,7 +11,11 @@ public interface GorevRepository extends JpaRepository<Gorev, Long> {
     // Tüm aktif görevler
     List<Gorev> findByAktifTrue();
 
-    // Birime göre aktif görevler
+    // Birime göre TÜM görevler
+    // Aktif + pasif kayıtları getirir.
+    List<Gorev> findByBirimId(Long birimId);
+
+    // Birime göre sadece aktif görevler
     List<Gorev> findByBirimIdAndAktifTrue(Long birimId);
 
     // Tarihe göre aktif görevler
