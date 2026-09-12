@@ -8,6 +8,9 @@ import LoginPage from "../pages/auth/LoginPage";
 import DashboardPage from "../pages/DashboardPage";
 import PlaceholderPage from "../pages/PlaceholderPage";
 import PersonelPage from "../pages/PersonelPage";
+import GorevlerPage from "../pages/GorevlerPage";
+import GorevDagitimPage from "../pages/GorevDagitimPage";
+
 import BirimlerPage from "../pages/admin/BirimlerPage";
 import GorevTurleriPage from "../pages/admin/GorevTurleriPage";
 
@@ -41,22 +44,12 @@ const AppRoutes = () => {
 
           <Route
             path="/gorevler"
-            element={
-              <PlaceholderPage
-                title="Görevler"
-                description="Görev kayıt ve yönetim işlemleri."
-              />
-            }
+            element={<GorevlerPage />}
           />
 
           <Route
             path="/gorev-dagitim"
-            element={
-              <PlaceholderPage
-                title="Görev Dağıtımı"
-                description="Personel görev dağıtım ve öneri işlemleri."
-              />
-            }
+            element={<GorevDagitimPage />}
           />
 
           {/* Sadece ADMIN */}
@@ -71,9 +64,10 @@ const AppRoutes = () => {
             />
 
             <Route
-  path="/gorev-turleri"
-  element={<GorevTurleriPage />}
-/>
+              path="/gorev-turleri"
+              element={<GorevTurleriPage />}
+            />
+
             <Route
               path="/kullanicilar"
               element={
